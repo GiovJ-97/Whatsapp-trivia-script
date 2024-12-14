@@ -17,9 +17,6 @@ This userscript allows to play a trivia game in the WhatsApp group.
 ![Trivia game for WhatsApp group](misc/ui.png)
 
 If you like this project and want to support it, please consider making a donation:
-[
-  ![Donate]
-  (https://raw.githubusercontent.com/stefan-niedermann/paypal-donate-button/master/paypal-donate-button.png)
-]
-(https://paypal.me/DrSigilo?country.x=MX&locale.x=es_XC)
+[![Donate](https://raw.githubusercontent.com/stefan-niedermann/paypal-donate-button/master/paypal-donate-button.png)](https://paypal.me/DrSigilo?country.x=MX&locale.x=es_XC)
+
 
