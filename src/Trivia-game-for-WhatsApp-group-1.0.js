@@ -7,8 +7,8 @@
 // @match        https://web.whatsapp.com/*
 // @grant        none
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=whatsapp.com
-// @downloadURL     https://raw.githubusercontent.com/GiovJ-97/Whatsapp-trivia-script/blob/main/Trivia-game-for-WhatsApp-group-1.0.js
-// @updateURL       https://raw.githubusercontent.com/GiovJ-97/Whatsapp-trivia-script/blob/main/Trivia-game-for-WhatsApp-group-1.0.js
+// @downloadURL     https://raw.githubusercontent.com/GiovJ-97/Whatsapp-trivia-script/blob/main/src/Trivia-game-for-WhatsApp-group-1.0.js
+// @updateURL       https://raw.githubusercontent.com/GiovJ-97/Whatsapp-trivia-script/blob/main/src/Trivia-game-for-WhatsApp-group-1.0.js
 // ==/UserScript==
 
 (function () {
