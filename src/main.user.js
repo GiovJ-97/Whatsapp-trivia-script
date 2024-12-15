@@ -4,11 +4,13 @@
 // @version      1.0
 // @description  Allow to play trivia with people in Whatsapp group
 // @author       GiovJ-97
+// @license      AGPL-3.0
+// @icon         https://www.google.com/s2/favicons?sz=64&domain=whatsapp.com
+// @homepage     https://github.com/GiovJ-97/Whatsapp-trivia-script
+// @downloadURL  https://raw.githubusercontent.com/GiovJ-97/Whatsapp-trivia-script/main/src/main.user.js
+// @updateURL    https://raw.githubusercontent.com/GiovJ-97/Whatsapp-trivia-script/main/src/main.user.js
 // @match        https://web.whatsapp.com/*
 // @grant        none
-// @icon         https://www.google.com/s2/favicons?sz=64&domain=whatsapp.com
-// @downloadURL     https://raw.githubusercontent.com/GiovJ-97/Whatsapp-trivia-script/blob/main/src/Trivia-game-for-WhatsApp-group-1.0.js
-// @updateURL       https://raw.githubusercontent.com/GiovJ-97/Whatsapp-trivia-script/blob/main/src/Trivia-game-for-WhatsApp-group-1.0.js
 // ==/UserScript==
 
 (function () {
