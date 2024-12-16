@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Trivia game for WhatsApp group
 // @namespace    http://tampermonkey.net/
-// @version      1.0
+// @version      1.1
 // @description  Allow to play trivia with people in Whatsapp group
 // @author       GiovJ-97
 // @license      AGPL-3.0
@@ -16,7 +16,79 @@
 (function () {
     'use strict';
 
-    const BUTTON_TEXT = 'Trivia'; // texto del botón
+    // texto por defecto === inglés
+    /*let OPEN_UI_BUTTON_TEXT = 'Trivia'; // texto del botón
+    let TITLE_BUTTON_TEXT = 'Trivia for WhatsApp'; // texto del título
+    let QUESTION_FIELD_HINT_TEXT = 'Enter questions. One per line break.';
+    let ANSWER_FIELD_HINT_TEXT = 'Enter answers. One per line break.';
+    let CHECKBOX_TAG_TEXT = 'Tag members';
+    let CHECKBOX_TAG_NATION_TEXT = 'Nation Order';
+    let CHECKBOX_TAG_NATION_RESUME_TEXT = 'Nation Resume';
+    let CHECKBOX_REPEAT_ALL_TEXT = 'Repeat';
+    let CHECKBOX_RANDOMIZE_ORDER_TEXT = 'Randomize';
+    let CHECKBOX_ENUMERATE_TEXT = 'Enumerate';
+    let CHECKBOX_BOLD_TEXT = 'Bold';
+    let CHECKBOX_ITALIC_TEXT = 'Italic';
+    let CHECKBOX_UPPERCASE_TEXT = 'Uppercase';
+    let ANSWERS_NEEDED_TEXT = 'Correct answers';
+    let CLOSE_TEXT = 'Close';
+    let START_TEXT = 'Start game';
+    let MENTION_HEADER_TEXT = 'Mentioning members…';
+    let groupSize = 0, MENTION_RESUME_NATION_TEXT = `There are ${groupSize} members in the chat group, of which:`;
+    let MENTION_RESUME_NATION_ARE_TEXT = 'are';
+    let WARN_TEXTFIELD_EMPTY = 'It looks like some of the text fields are still empty. Please add the corresponding text.';
+    let questionNumber = 0, answerNumber = 0, WARN_TEXTFIELD_CONTENT_DONT_MATCH = `The questions number (${questionNumber}) and answers number (${answerNumber}) doesn't match. Please check.`;
+    let CANCEL_MESSAGE_TEXT = 'Trivia game ended by host.';
+    let COUNTDOWN_TEXT_0 = `Starting trivia game…`;
+    let countdownNumber = 0, COUNTDOWN_TEXT_1 = `Starting at ${countdownNumber}…`;
+    let COUNTDOWN_TEXT_2 = `Here we go!`;
+    let RESPONSE_CONFIRMATION_TEXT = `☑ *_response received_* ☑`;
+    let ANSWER = '', PLAYER_NUMBER = '', RESPONSE_MENTION_TEXT = `_*response:*_ "${ANSWER}". _*player:*_ @${PLAYER_NUMBER}`;
+    let CONGRATS_HEADER_TEXT_0 = 'Scoreboard:';
+    let CONGRATS_HEADER_TEXT_1 = 'Final scoreboard:';
+    let ENDED_TEXT = 'The trivia game has ended. Well done, participants!';
+    let pointNumber = 0, PLAYER_SCORE_TEXT = `*${pointNumber}* points ➨ @${PLAYER_NUMBER}`;
+    let CONGRATS_END_TEXT_0 = `¡${pointNumber}st place!`;
+    let CONGRATS_END_TEXT_1 = `¡${pointNumber}nd place!`;
+    let CONGRATS_END_TEXT_2 = `¡${pointNumber}rd place!`;
+    let CONGRATULATIONS = ["excellent!", "great!", "amazing!", "incredible!", "fantastic!"];*/
+
+    let currentLangID = 'EN';
+    let OPEN_UI_BUTTON_TEXT = 'Trivia'; // texto del botón
+    let TITLE_BUTTON_TEXT = ''; // texto del título
+    let QUESTION_FIELD_HINT_TEXT = '';
+    let ANSWER_FIELD_HINT_TEXT = '';
+    let CHECKBOX_TAG_TEXT = '';
+    let CHECKBOX_TAG_NATION_TEXT = '';
+    let CHECKBOX_TAG_NATION_RESUME_TEXT = '';
+    let CHECKBOX_REPEAT_ALL_TEXT = '';
+    let CHECKBOX_RANDOMIZE_ORDER_TEXT = '';
+    let CHECKBOX_ENUMERATE_TEXT = '';
+    let CHECKBOX_BOLD_TEXT = '';
+    let CHECKBOX_ITALIC_TEXT = '';
+    let CHECKBOX_UPPERCASE_TEXT = '';
+    let ANSWERS_NEEDED_TEXT = 'default';
+    let CLOSE_TEXT = '';
+    let START_TEXT = '';
+    let MENTION_HEADER_TEXT = '';
+    let groupSize = 0, MENTION_RESUME_NATION_TEXT = ``;
+    let MENTION_RESUME_NATION_ARE_TEXT = '';
+    let WARN_TEXTFIELD_EMPTY = '';
+    let questionNumber = 0, answerNumber = 0, WARN_TEXTFIELD_CONTENT_DONT_MATCH = ``;
+    let CANCEL_MESSAGE_TEXT = '';
+    let COUNTDOWN_TEXT_0 = ``;
+    let countdownNumber = 0, COUNTDOWN_TEXT_1 = ``;
+    let COUNTDOWN_TEXT_2 = ``;
+    let RESPONSE_CONFIRMATION_TEXT = ``;
+    let ANSWER = '', PLAYER_NUMBER = '', RESPONSE_MENTION_TEXT = ``;
+    let CONGRATS_HEADER_TEXT_0 = '';
+    let CONGRATS_HEADER_TEXT_1 = '';
+    let ENDED_TEXT = '';
+    let pointNumber = 0, PLAYER_SCORE_TEXT = ``;
+    let CONGRATS_END_TEXT_0 = ``;
+    let CONGRATS_END_TEXT_1 = ``;
+    let CONGRATS_END_TEXT_2 = ``;
+    let CONGRATULATIONS = ["", "", "", "", ""];
 
     let isTyping = false;
     let answerFlag = false;
@@ -24,13 +96,113 @@
     let intelligentPeople = {}; // Mapa vacío
     let messageListSize = 6548; // Variable aleatoria de inicio para no coincidir al primer lanzamiento
 
-    const TITLE = 'Trivia game for WhatsApp'; // texto del título
-
     // Definir una variable global solo accesible dentro del script
     let runningFlag = false;
 
-    // Instanciar containers de checkboxes
-    let checkboxMentionContainer, checkboxRepeatContainer, checkboxEnumerateContainer, checkboxBoldContainer, checkboxItalicContainer, checkboxUppercaseContainer, checkboxNationSortContainer, checkboxNationResumeContainer, checkboxRandomContainer, triviaDialog, inputNumberContainer;
+    // elementos traducibles
+    let openUiButton, uiTitle, textAreaQuestions, textAreaAnswers, checkboxMentionContainer, checkboxRepeatContainer, checkboxEnumerateContainer, checkboxBoldContainer, checkboxItalicContainer, checkboxUppercaseContainer, checkboxNationSortContainer, checkboxNationResumeContainer, checkboxRandomContainer, inputNumberContainer, cancelButton, startButton;
+
+    let triviaDialog;
+
+    function setLang(lang = 'EN') {
+        if (lang === 'EN') {
+            OPEN_UI_BUTTON_TEXT = 'Trivia'; // texto del botón
+            TITLE_BUTTON_TEXT = 'Trivia for WhatsApp'; // texto del título
+            QUESTION_FIELD_HINT_TEXT = 'Enter questions. One per line break.';
+            ANSWER_FIELD_HINT_TEXT = 'Enter answers. One per line break.';
+            CHECKBOX_TAG_TEXT = 'Tag members';
+            CHECKBOX_TAG_NATION_TEXT = 'Nation Order';
+            CHECKBOX_TAG_NATION_RESUME_TEXT = 'Nation Resume';
+            CHECKBOX_REPEAT_ALL_TEXT = 'Repeat';
+            CHECKBOX_RANDOMIZE_ORDER_TEXT = 'Randomize';
+            CHECKBOX_ENUMERATE_TEXT = 'Enumerate';
+            CHECKBOX_BOLD_TEXT = 'Bold';
+            CHECKBOX_ITALIC_TEXT = 'Italic';
+            CHECKBOX_UPPERCASE_TEXT = 'Uppercase';
+            ANSWERS_NEEDED_TEXT = 'Correct answers';
+            CLOSE_TEXT = 'Close';
+            START_TEXT = 'Start game';
+            MENTION_HEADER_TEXT = 'Mentioning members…';
+            MENTION_RESUME_NATION_TEXT = `There are ${groupSize} members in the chat group, of which:`;
+            MENTION_RESUME_NATION_ARE_TEXT = 'are';
+            WARN_TEXTFIELD_EMPTY = 'It looks like some of the text fields are still empty. Please add the corresponding text.';
+            WARN_TEXTFIELD_CONTENT_DONT_MATCH = `The questions number (${questionNumber}) and answers number (${answerNumber}) doesn't match. Please check.`;
+            CANCEL_MESSAGE_TEXT = 'Trivia game ended by host.';
+            COUNTDOWN_TEXT_0 = `Starting trivia game…`;
+            COUNTDOWN_TEXT_1 = `Starting at ${countdownNumber}…`;
+            COUNTDOWN_TEXT_2 = `Here we go!`;
+            RESPONSE_CONFIRMATION_TEXT = `☑ *_response received_* ☑`;
+            RESPONSE_MENTION_TEXT = `_*response:*_ "${ANSWER}". _*player:*_ @${PLAYER_NUMBER}`;
+            CONGRATS_HEADER_TEXT_0 = 'Scoreboard:';
+            CONGRATS_HEADER_TEXT_1 = 'Final scoreboard:';
+            ENDED_TEXT = 'The trivia game has ended. Well done, participants!';
+            PLAYER_SCORE_TEXT = `*${pointNumber}* points ➨ @${PLAYER_NUMBER}`;
+            CONGRATS_END_TEXT_0 = `¡${pointNumber}st place!`;
+            CONGRATS_END_TEXT_1 = `¡${pointNumber}nd place!`;
+            CONGRATS_END_TEXT_2 = `¡${pointNumber}rd place!`;
+            CONGRATULATIONS = ["excellent!", "great!", "amazing!", "incredible!", "fantastic!"];
+        } else if (lang === 'ES') {
+            // español
+            OPEN_UI_BUTTON_TEXT = 'Trivia'; // texto del botón
+            TITLE_BUTTON_TEXT = 'Trivia para WhatsApp'; // texto del título
+            QUESTION_FIELD_HINT_TEXT = 'Introduzca las preguntas. Una por salto de línea.';
+            ANSWER_FIELD_HINT_TEXT = 'Introduzca las respuestas. Una por salto de línea.';
+            CHECKBOX_TAG_TEXT = 'Etiquetar miembros';
+            CHECKBOX_TAG_NATION_TEXT = 'Por nación';
+            CHECKBOX_TAG_NATION_RESUME_TEXT = 'Resumen de nación';
+            CHECKBOX_REPEAT_ALL_TEXT = 'Repetir';
+            CHECKBOX_RANDOMIZE_ORDER_TEXT = 'Aleatorizar';
+            CHECKBOX_ENUMERATE_TEXT = 'Enumerar';
+            CHECKBOX_BOLD_TEXT = 'Negrilla';
+            CHECKBOX_ITALIC_TEXT = 'Cursiva';
+            CHECKBOX_UPPERCASE_TEXT = 'Mayúscula';
+            ANSWERS_NEEDED_TEXT = 'Respuestas correctas';
+            CLOSE_TEXT = 'Cerrar';
+            START_TEXT = 'Iniciar juego';
+
+            MENTION_HEADER_TEXT = 'Etiquetando integrantes…';
+            MENTION_RESUME_NATION_TEXT = `Resumen: el grupo contiene ${groupSize} integrantes, de los cuales:`;
+            MENTION_RESUME_NATION_ARE_TEXT = 'son'
+            WARN_TEXTFIELD_EMPTY = 'Parece que alguno de los campos de texto aún está vacío. Añada el texto correspondiente.'
+            WARN_TEXTFIELD_CONTENT_DONT_MATCH = `La cantidad de preguntas (${questionNumber}) y respuestas (${answerNumber}) no concuerda. Por favor, verifíquelo.`
+            CANCEL_MESSAGE_TEXT = 'Juego de trivia terminado por el anfitrión.';
+            COUNTDOWN_TEXT_0 = `Iniciando juego de trivia…`;
+            COUNTDOWN_TEXT_1 = `Iniciando en ${countdownNumber}…`;
+            COUNTDOWN_TEXT_2 = `¡Aquí vamos!`;
+            RESPONSE_CONFIRMATION_TEXT = `☑ *_respuesta detectada_* ☑`;
+            RESPONSE_MENTION_TEXT = `_*respuesta:*_ "${ANSWER}". _*jugador:*_ @${PLAYER_NUMBER}`;
+            CONGRATS_HEADER_TEXT_0 = `Marcador actual`;
+            CONGRATS_HEADER_TEXT_1 = 'Marcador final:';
+            ENDED_TEXT = 'Finalizando juego de trivia… ¡Buen trabajo a todos!'
+            PLAYER_SCORE_TEXT = `*${pointNumber}* puntos ➨ @${PLAYER_NUMBER}`;
+            CONGRATS_END_TEXT_0 = `¡${pointNumber}er lugar!`;
+            CONGRATS_END_TEXT_1 = `¡${pointNumber}do lugar!`;
+            CONGRATS_END_TEXT_2 = `¡${pointNumber}er lugar!`;
+            CONGRATULATIONS = ["¡excelente!", "¡genial!", "¡asombroso!", "¡increíble!", "¡fantástico!"];
+        }
+
+        // se actualiza el texto el texto en los componentes
+        openUiButton.textContent = OPEN_UI_BUTTON_TEXT;
+        uiTitle.textContent = TITLE_BUTTON_TEXT;
+        textAreaQuestions.placeholder = QUESTION_FIELD_HINT_TEXT;
+        textAreaAnswers.placeholder = ANSWER_FIELD_HINT_TEXT;
+
+        checkboxMentionContainer.querySelector('.checkbox-label').textContent = CHECKBOX_TAG_TEXT;
+        checkboxNationSortContainer.querySelector('.checkbox-label').textContent = CHECKBOX_TAG_NATION_TEXT;
+        checkboxNationResumeContainer.querySelector('.checkbox-label').textContent = CHECKBOX_TAG_NATION_RESUME_TEXT;
+        checkboxRepeatContainer.querySelector('.checkbox-label').textContent = CHECKBOX_REPEAT_ALL_TEXT;
+        checkboxRandomContainer.querySelector('.checkbox-label').textContent = CHECKBOX_RANDOMIZE_ORDER_TEXT;
+        checkboxEnumerateContainer.querySelector('.checkbox-label').textContent = CHECKBOX_ENUMERATE_TEXT;
+        checkboxBoldContainer.querySelector('.checkbox-label').textContent = CHECKBOX_BOLD_TEXT;
+        checkboxItalicContainer.querySelector('.checkbox-label').textContent = CHECKBOX_ITALIC_TEXT;
+        checkboxUppercaseContainer.querySelector('.checkbox-label').textContent = CHECKBOX_UPPERCASE_TEXT;
+        if (inputNumberContainer.querySelector('.inputNumber-slabel') !== null) inputNumberContainer.querySelector('.inputNumber-slabel').textContent = ANSWERS_NEEDED_TEXT;
+        
+        cancelButton.textContent = CLOSE_TEXT;
+        startButton.textContent = START_TEXT;
+
+        currentLangID = lang;
+    }
 
     function sleep(ms) {
         // Usamos una función auto-ejecutada para evitar el async
@@ -64,16 +236,18 @@
             for (let i = 2; i >= currentQuestionNumber; i--) {
                 if (runningFlag) {
                     if (i === 2) {
-                        sendMessage(`Iniciando dinámica de trivia…`); // mensaje inicial
+                        sendMessage(COUNTDOWN_TEXT_0); // mensaje inicial
                         await wait(3200);
                     }
-                    sendMessage(`Iniciando en ${i + 1}…`);
+                    countdownNumber = i + 1;
+                    setLang(currentLangID); // actualizar valor del string
+                    sendMessage(COUNTDOWN_TEXT_1);
                     await wait(3200);
                 } else {
                     return null;
                 }
             }
-            sendMessage(`¡Ahora!`);
+            sendMessage(COUNTDOWN_TEXT_2);
             await wait(3000);
         }
         /* Mensaje de preparación */
@@ -215,25 +389,25 @@
             return;
         }
 
-        const button = document.createElement('button');
+        openUiButton = document.createElement('button');
         // Asignamos un ID único al botón
-        button.id = 'activatorButton';
-        button.textContent = BUTTON_TEXT;
-        button.style.marginLeft = '5px';
-        button.style.padding = '5px 10px';
-        button.style.backgroundColor = '#128C7E';
-        button.style.color = 'white';
-        button.style.border = 'none';
-        button.style.borderRadius = '5px';
-        button.style.cursor = 'pointer';
-        button.style.fontSize = '14px';
-        button.title = 'Prog';
+        openUiButton.id = 'activatorButton';
+        openUiButton.textContent = OPEN_UI_BUTTON_TEXT;
+        openUiButton.style.marginLeft = '5px';
+        openUiButton.style.padding = '5px 10px';
+        openUiButton.style.backgroundColor = '#128C7E';
+        openUiButton.style.color = 'white';
+        openUiButton.style.border = 'none';
+        openUiButton.style.borderRadius = '5px';
+        openUiButton.style.cursor = 'pointer';
+        openUiButton.style.fontSize = '14px';
+        openUiButton.title = 'Prog';
 
-        button.addEventListener('click', async () => {
+        openUiButton.addEventListener('click', async () => {
             openTextEditorDialog();
         });
 
-        container.appendChild(button);
+        container.appendChild(openUiButton);
     }
 
     function openTextEditorDialog() {
@@ -256,11 +430,11 @@
         triviaDialog.style.textAlign = 'center';
 
         // Crear el título
-        const title = document.createElement('h2');
-        title.textContent = TITLE;
-        title.style.color = 'rgb(233, 237, 239)';
-        title.style.marginBottom = '20px';
-        triviaDialog.appendChild(title);
+        uiTitle = document.createElement('h2');
+        uiTitle.textContent = TITLE_BUTTON_TEXT;
+        uiTitle.style.color = 'rgb(233, 237, 239)';
+        uiTitle.style.marginBottom = '20px';
+        triviaDialog.appendChild(uiTitle);
 
         // Crear un contenedor para los TextArea
         const textContainer = document.createElement('div');
@@ -269,21 +443,21 @@
         textContainer.style.marginBottom = '10px';
 
         // Crear el campo de texto
-        const textAreaQuestions = document.createElement('textarea');
+        textAreaQuestions = document.createElement('textarea');
         textAreaQuestions.style.width = '70%';
         textAreaQuestions.style.height = '140px';
         textAreaQuestions.style.marginBottom = '10px';
-        textAreaQuestions.placeholder = 'Inserte preguntas. Cada salto de línea corresponde a una nueva sentencia';
+        textAreaQuestions.placeholder = QUESTION_FIELD_HINT_TEXT;
         textAreaQuestions.style.backgroundColor = 'rgb(32, 44, 51)'; // claro
         textAreaQuestions.style.borderColor = 'rgb(32, 44, 51)'; // claro
         textAreaQuestions.style.color = 'rgb(233, 237, 239)';
-
+        
         // Crear el campo de texto 2
-        const textAreaAnswers = document.createElement('textarea');
+        textAreaAnswers = document.createElement('textarea');
         textAreaAnswers.style.width = '30%';
         textAreaAnswers.style.height = '140px';
         textAreaAnswers.style.marginBottom = '10px';
-        textAreaAnswers.placeholder = 'Inserte respuestas. Cada salto de línea corresponde a una nueva sentencia';
+        textAreaAnswers.placeholder = ANSWER_FIELD_HINT_TEXT;
         textAreaAnswers.style.backgroundColor = 'rgb(32, 44, 51)'; // claro
         textAreaAnswers.style.borderColor = 'rgb(32, 44, 51)'; // claro
         textAreaAnswers.style.color = 'rgb(233, 237, 239)';
@@ -315,6 +489,7 @@
 
             const checkboxLabel = document.createElement('label');
             checkboxLabel.textContent = labelText;
+            checkboxLabel.className = 'checkbox-label'; // Añadir para facilitar selección
             checkboxLabel.style.color = 'rgb(233, 237, 239)';
             checkboxLabel.style.marginRight = '10px';
 
@@ -324,6 +499,10 @@
             if (!state) {
                 checkbox.disabled = true;
             }
+
+            checkboxLabel.addEventListener('click', () => {
+                checkbox.click();
+            });
 
             container.appendChild(checkbox);
             container.appendChild(checkboxLabel);
@@ -336,16 +515,17 @@
             container.style.display = 'flex';
             container.style.alignItems = 'center';
             container.style.justifyContent = 'center';
-        
+
             // Si labelText1 está definido, crea y agrega el primer label
             if (labelText1) {
                 const label1 = document.createElement('label');
                 label1.textContent = labelText1;
+                label1.className = 'inputNumber-flabel'; // Añadir para facilitar selección
                 label1.style.color = 'rgb(233, 237, 239)';
                 label1.style.marginRight = '10px';
                 container.appendChild(label1);
             }
-        
+
             // Crear campo numérico para los segundos
             const inputNumber = document.createElement('input');
             inputNumber.type = 'number';
@@ -356,32 +536,171 @@
             inputNumber.style.color = 'rgb(233, 237, 239)';
             inputNumber.value = '3'; // tres segundos predeterminados de espera entre mensajes
             inputNumber.style.display = 'flex';
-        
+
             container.appendChild(inputNumber);
-        
+
             // Si labelText2 está definido, crea y agrega el segundo label
             if (labelText2) {
                 const label2 = document.createElement('label');
                 label2.textContent = labelText2;
+                label2.className = 'inputNumber-slabel'; // Añadir para facilitar selección
                 label2.style.color = 'rgb(233, 237, 239)';
                 label2.style.marginLeft = '10px';
                 container.appendChild(label2);
             }
-        
+
             return container;
         };
 
+        /*const tabWithListTemplate = (options, listeners) => {
+            // Crear el contenedor principal
+            const container = document.createElement('div');
+            container.style.width = '200px';
+            container.style.border = '1px solid #007BFF';
+            container.style.borderRadius = '5px';
+            container.style.overflow = 'hidden';
+
+            // Crear el botón de la pestaña
+            const tabButton = document.createElement('button');
+            tabButton.textContent = 'Mostrar Opciones';
+            tabButton.style.backgroundColor = '#007BFF';
+            tabButton.style.color = 'white';
+            tabButton.style.padding = '10px';
+            tabButton.style.border = 'none';
+            tabButton.style.width = '100%';
+            tabButton.style.cursor = 'pointer';
+
+            // Crear el contenedor de la lista
+            const listContainer = document.createElement('ul');
+            listContainer.style.listStyle = 'none';
+            listContainer.style.padding = '0';
+            listContainer.style.margin = '0';
+            listContainer.style.display = 'none';
+            listContainer.style.borderTop = '1px solid #007BFF';
+
+            // Crear los elementos de la lista
+            options.forEach((option, index) => {
+                const listItem = document.createElement('li');
+                listItem.textContent = option;
+                listItem.style.padding = '10px';
+                listItem.style.cursor = 'pointer';
+                listItem.style.borderBottom = '1px solid #ddd';
+
+                // Agregar el evento de clic
+                listItem.addEventListener('click', () => {
+                    if (listeners[index]) {
+                        listeners[index]();
+                    }
+                });
+
+                // Estilo de hover
+                listItem.addEventListener('mouseover', () => {
+                    listItem.style.backgroundColor = '#f0f0f0';
+                });
+                listItem.addEventListener('mouseout', () => {
+                    listItem.style.backgroundColor = 'white';
+                });
+
+                listContainer.appendChild(listItem);
+            });
+
+            // Alternar la visibilidad de la lista al hacer clic en el botón
+            tabButton.addEventListener('click', () => {
+                listContainer.style.display =
+                    listContainer.style.display === 'none' ? 'block' : 'none';
+            });
+
+            // Agregar el botón y la lista al contenedor principal
+            container.appendChild(tabButton);
+            container.appendChild(listContainer);
+
+            return container;
+        };*/
+
+        const tabWithListTemplate = (options, listeners) => {
+            // Crear contenedor del menú desplegable
+            const dropdown = document.createElement('div');
+            dropdown.className = 'dropdown';
+
+            // Botón principal para desplegar el menú
+            const button = document.createElement('button');
+            button.className = 'dropdown-button';
+            button.textContent = 'Language';
+            button.style.backgroundColor = '#007BFF'; // Color de fondo azul
+            button.style.color = 'white'; // Texto blanco
+            button.style.border = 'none';
+            button.style.padding = '10px 20px';
+            button.style.cursor = 'pointer';
+            button.style.borderRadius = '5px';
+            dropdown.appendChild(button);
+
+            // Contenedor de la lista desplegable
+            const list = document.createElement('ul');
+            list.className = 'dropdown-list';
+            list.style.display = 'none'; // Oculto por defecto
+            list.style.backgroundColor = '#f8f9fa'; // Fondo claro
+            list.style.border = '1px solid #ccc';
+            list.style.padding = '0';
+            list.style.margin = '5px 0 0';
+            list.style.borderRadius = '5px';
+            list.style.listStyle = 'none';
+            list.style.position = 'absolute';
+
+            // Crear los elementos de la lista con listeners
+            options.forEach((option, index) => {
+                const listItem = document.createElement('li');
+                listItem.className = 'dropdown-item';
+                listItem.textContent = option;
+                listItem.style.padding = '10px';
+                listItem.style.cursor = 'pointer';
+                listItem.style.borderBottom = '1px solid #ddd';
+
+                listItem.addEventListener('mouseover', () => {
+                    listItem.style.backgroundColor = '#e9ecef'; // Fondo al pasar el cursor
+                });
+
+                listItem.addEventListener('mouseout', () => {
+                    listItem.style.backgroundColor = 'transparent';
+                });
+
+                // Asignar el listener correspondiente
+                listItem.addEventListener('click', () => {
+                    listeners[index](); // Ejecutar la función correspondiente
+                    list.style.display = 'none'; // Cerrar el menú
+                    button.textContent = option; // Actualizar el texto del botón
+                });
+
+                list.appendChild(listItem);
+            });
+
+            dropdown.appendChild(list);
+
+            // Toggle para abrir/cerrar el menú
+            button.addEventListener('click', () => {
+                list.style.display = list.style.display === 'none' ? 'block' : 'none';
+            });
+
+            // Manejo de clics fuera del menú para cerrarlo
+            document.addEventListener('click', (event) => {
+                if (!dropdown.contains(event.target)) {
+                    list.style.display = 'none';
+                }
+            });
+
+            return dropdown;
+        }
+
         // Enlace a variable de clase. El estado de los checkboxes se puede verificar desde cualquier parte
-        checkboxMentionContainer = checkboxWithLabelTemplate('Etiquetar', true);
-        checkboxNationSortContainer = checkboxWithLabelTemplate('Nacionalidad', false);
-        checkboxNationResumeContainer = checkboxWithLabelTemplate('Resumen', false);
-        checkboxRepeatContainer = checkboxWithLabelTemplate('Repetir', true);
-        checkboxRandomContainer = checkboxWithLabelTemplate('Aleatorizar', true);
-        checkboxEnumerateContainer = checkboxWithLabelTemplate('Enumerar', true);
-        checkboxBoldContainer = checkboxWithLabelTemplate('Negritas', true);
-        checkboxItalicContainer = checkboxWithLabelTemplate('Cursiva', true);
-        checkboxUppercaseContainer = checkboxWithLabelTemplate('Mayúsculas', true);
-        inputNumberContainer = inputNumberWithLabelTemplate('', 'Respuestas');
+        checkboxMentionContainer = checkboxWithLabelTemplate(CHECKBOX_TAG_TEXT, true);
+        checkboxNationSortContainer = checkboxWithLabelTemplate(CHECKBOX_TAG_NATION_TEXT, false);
+        checkboxNationResumeContainer = checkboxWithLabelTemplate(CHECKBOX_TAG_NATION_RESUME_TEXT, false);
+        checkboxRepeatContainer = checkboxWithLabelTemplate(CHECKBOX_REPEAT_ALL_TEXT, true);
+        checkboxRandomContainer = checkboxWithLabelTemplate(CHECKBOX_RANDOMIZE_ORDER_TEXT, true);
+        checkboxEnumerateContainer = checkboxWithLabelTemplate(CHECKBOX_ENUMERATE_TEXT, true);
+        checkboxBoldContainer = checkboxWithLabelTemplate(CHECKBOX_BOLD_TEXT, true);
+        checkboxItalicContainer = checkboxWithLabelTemplate(CHECKBOX_ITALIC_TEXT, true);
+        checkboxUppercaseContainer = checkboxWithLabelTemplate(CHECKBOX_UPPERCASE_TEXT, true);
+        inputNumberContainer = inputNumberWithLabelTemplate('', ANSWERS_NEEDED_TEXT);
 
         // Añadir checkboxes al contenedor
         checkboxContainer1st.appendChild(checkboxMentionContainer);
@@ -402,8 +721,8 @@
         buttonContainer.style.marginTop = '20px';
 
         // Crear botón de cancelación
-        const cancelButton = document.createElement('button');
-        cancelButton.textContent = 'Cancelar';
+        cancelButton = document.createElement('button');
+        cancelButton.textContent = CLOSE_TEXT;
         cancelButton.style.backgroundColor = '#f44336';
         cancelButton.style.color = 'white';
         cancelButton.style.border = 'none';
@@ -415,23 +734,23 @@
         // listener para el botón
         cancelButton.addEventListener('click', () => {
             runningFlag = false; // Variable de clase que avisa de la cancelación del script
-            sendMessage("Dinámica de trivia terminada por el anfitrión", 0);
+            sendMessage(CANCEL_MESSAGE_TEXT, 0);
             triviaDialog.remove(); // Cerrar el diálogo al hacer clic en "Cancelar"
         });
-
+        
         // Crear botón de envío
-        const sendButton = document.createElement('button');
-        sendButton.textContent = 'Enviar';
-        sendButton.style.backgroundColor = '#128C7E';
-        sendButton.style.color = 'white';
-        sendButton.style.border = 'none';
-        sendButton.style.borderRadius = '5px';
-        sendButton.style.cursor = 'pointer';
-        sendButton.style.padding = '10px';
-        sendButton.style.fontSize = '14px';
+        startButton = document.createElement('button');
+        startButton.textContent = START_TEXT;
+        startButton.style.backgroundColor = '#128C7E';
+        startButton.style.color = 'white';
+        startButton.style.border = 'none';
+        startButton.style.borderRadius = '5px';
+        startButton.style.cursor = 'pointer';
+        startButton.style.padding = '10px';
+        startButton.style.fontSize = '14px';
 
         // listener para el botón
-        sendButton.addEventListener('click', async () => {
+        startButton.addEventListener('click', async () => {
             runningFlag = true;
             const questionsText = textAreaQuestions.value.trim(); // obtiene el texto del campo de preguntas
             const answersText = textAreaAnswers.value.trim(); // obtiene el texto del campo de respuestas
@@ -443,24 +762,29 @@
                 if (isNaN(delayMilliseconds) || delayMilliseconds < 0) {
                     alert('El valor de tiempo entre mensajes debe ser un número entero positivo.');
                     return;
-                } */
-
-                triviaDialog.style.opacity = '0.65'; // semitransparente al iniciar
+                } */        
 
                 let questionList = questionsText.split(/[\n\t]+/).map(line => line.trim()).filter(line => line); // romper en líneas el contenido del cuadro de texto de las respuestas
                 let answerList = answersText.split(/[\n\t]+/).map(line => line.trim()).filter(line => line); // romper en líneas, lista de elementos
                 // if aleatorizar preguntas está pulsado: 
                 if (checkboxRandomContainer.querySelector('input').checked) {
-                    questionList = shuffleArrayWithSeed(questionList, 12345); // La semilla debe ser la misma para mantener el patrón
-                    answerList = shuffleArrayWithSeed(answerList, 12345);
+                    const randomNumber = generateRandomNumber();
+                    questionList = shuffleArrayWithSeed(questionList, randomNumber); // La semilla debe ser la misma para mantener el patrón
+                    answerList = shuffleArrayWithSeed(answerList, randomNumber);
                 }
                 const cBoxRandomSort = checkboxRandomContainer.querySelector('input[type="checkbox"]');
                 cBoxRandomSort.disabled = true; // no se puede activar o desactivar una vez iniciado
 
                 if (questionList.length !== answerList.length) { // ambas listas deben medir lo mismo
-                    alert(`La cantidad de preguntas (${questionList.length}) y respuestas (${answerList.length}) no concuerda. Por favor, verifíquelo.`);
+                    questionNumber = questionList.length;
+                    answerNumber = answerList.length;
+                    setLang(currentLangID);
+                    // solución: crear de nuevo el string con los datos actualizados
+                    alert(WARN_TEXTFIELD_CONTENT_DONT_MATCH);
                     return;
                 }
+
+                triviaDialog.style.opacity = '0.65'; // semitransparente al iniciar
 
                 while (true) {
                     for (const question of questionList) {
@@ -510,19 +834,28 @@
                     }
                 }
                 console.log(`Envío completado, ${questionList.length} mensajes enviados`);
-                showToast(`Envío completado, ${questionList.length} mensajes enviados`, 5000); // Aparecerá durante 5 segundos              
+                //showToast(`Envío completado, ${questionList.length} mensajes enviados`, 5000); // Aparecerá durante 5 segundos              
                 // dialog.remove(); // Cerrar el diálogo
             } else {
-                alert('Alguno de los campos de texto está vacío');
+                alert(WARN_TEXTFIELD_EMPTY);
             }
         });
 
+        // Ejemplo de uso
+        const langOptions = ['English', 'Español'];
+        const langListeners = [
+            () => setLang('EN'),
+            () => setLang('ES'),
+        ];
+        const langSelector = tabWithListTemplate(langOptions, langListeners);
+        buttonContainer.appendChild(langSelector);
+
         // Añadir botones al contenedor de botones
         buttonContainer.appendChild(cancelButton);
-        buttonContainer.appendChild(sendButton);
+        buttonContainer.appendChild(startButton);
 
         // Añadir elementos al diálogo
-        triviaDialog.appendChild(title);
+        triviaDialog.appendChild(uiTitle);
         triviaDialog.appendChild(textContainer);
         triviaDialog.appendChild(checkboxContainer1st);
         triviaDialog.appendChild(checkboxContainer2nd);
@@ -551,6 +884,8 @@
                 cBoxNationResume.disabled = true;
             }
         });
+
+        setLang('EN');
     }
 
     function refreshTextArea(textfield, line) {
@@ -672,7 +1007,7 @@
                     // Add '\u200B' character 4000 times to emulate a spoiler behavior
                     const zeroWidthSpace = '\u200B'.repeat(1000) // 4000
                     insertText(zeroWidthSpace);
-                    insertText(`_*ETIQUETANDO INTEGRANTES…*_`);
+                    insertText(`${formatText(MENTION_HEADER_TEXT)}`);
                     insertNewLineAtTextArea(chatInput); // insertar nueva linea en el cuadro de escritura
                     insertNewLineAtTextArea(chatInput); // insertar nueva linea en el cuadro de escritura
                     await wait(50);
@@ -865,7 +1200,9 @@
     }
 
     async function sendNationResume(chatInput, nationCounts, total) {
-        insertText(`_*RESUMEN: EL GRUPO CONTIENE ${total} MIEMBROS, DE LOS CUALES:*_`);
+        groupSize = total;
+        setLang(currentLangID); // actualizar valor del string
+        insertText(formatText(MENTION_RESUME_NATION_TEXT));
         typeShiftEnter(chatInput);
 
         const sortedNations = Object.entries(nationCounts).map(([nation, count]) => {
@@ -876,7 +1213,7 @@
 
         typeShiftEnter(chatInput);
         for (const { nation, percent } of sortedNations) {
-            insertText(`*${percent.toFixed(2).padStart(5, '0')}%* son _*${nation}*_`);
+            insertText(`*${percent.toFixed(2).padStart(5, '0')}%* ${MENTION_RESUME_NATION_ARE_TEXT} _*${nation}*_`);
             typeShiftEnter(chatInput);
             await sleep(50).executeAsync();
         }
@@ -1007,13 +1344,13 @@
     /* Solo revisar respuesta */
     async function checkAnswer(question, answer) {
         console.log("Iniciando checkAnswer");
-    
+
         let correctAnswersNeeded = parseInt(inputNumberContainer.querySelector('input[type="number"]').value.trim(), 10);
         answerFlag = false;
         let points = correctAnswersNeeded + 2; // máxima cantidad de puntos dada al primer lugar
         let thinkers = [];
         let correctAnswersCounter = 0;
-    
+
         // Función anidada para manejar la lógica de salida
         async function checkExitCondition() {
             correctAnswersNeeded = parseInt(inputNumberContainer.querySelector('input[type="number"]').value.trim(), 10);
@@ -1033,38 +1370,38 @@
                 }
             }
         }
-    
+
         // answerWindow booleano async, detiene al bucle por tiempo.
         while (!answerFlag) { // repetir mientras no se responda correctamente y !runningFlag
-    
+
             if (!runningFlag) {
                 console.log("Juego de trivia cancelado");
                 break;
             }
-    
+
             const lastMessageData = getLastMessageData(); // se encarga de siempre recibir el último mensaje enviado o ser null si no hay tal
-    
+
             // Llamada a la función de lógica de salida
             await checkExitCondition();
-    
+
             if (lastMessageData !== null) {
                 const [userName, userPhoneNumber, userAnswer, userAnswerTime] = lastMessageData;
                 const phoneNumberForMention = cutTelephoneForMention(userPhoneNumber);
-    
+
                 try {
                     postCongrats(answerFlag, phoneNumberForMention, userAnswer, question); // Mensaje de respuesta detectada
                     console.log("postCongrats terminado");
                 } catch (error) {
                     console.error("postCongrats fallido:", error);
                 }
-    
+
                 if (normalizeText(userAnswer).includes(normalizeText(answer))) { // respuesta correcta detectada
                     if (!thinkers.includes(phoneNumberForMention)) { // evita asignar doble puntaje al mismo usuario
                         updateOrAdd(phoneNumberForMention, points); // añadir o sumar a dueño de "phone" a personas inteligentes
                         thinkers.push(phoneNumberForMention);
                         points--;
                         correctAnswersCounter++; // Incrementar contador de respuestas correctas
-    
+
                         // Llamada a la función de lógica de salida
                         await checkExitCondition();
                     }
@@ -1072,7 +1409,7 @@
                     updateOrAdd(phoneNumberForMention, 1, true);
                 }
             }
-    
+
             // Introducir una pausa para evitar bloqueo        
             await wait(300);
         }
@@ -1220,17 +1557,16 @@
         }
         isTyping = true;
 
-        let messageTail = "☑ *_respuesta recibida_* ☑";
         // if(!correctAnswer) messageTail = "*_¡respuesta incorrecta!_*"; // respuesta incorrecta                    
 
         const textarea = getInputTextArea(); // obtención de cuadro de escritura
         textarea.focus(); // enfocar área de escritura de texto
 
         /* truncar mensaje largo */
-        let answer = message; // strings
-        if (answer.length > 30) { // si answer tiene más de 30 caracteres
-            answer = answer.substring(0, 30) // answer es truncado a 30 caracteres
-            answer += "…"; // y se le añaden puntos al final
+        ANSWER = message; // strings
+        if (ANSWER.length > 30) { // si answer tiene más de 30 caracteres
+            ANSWER = ANSWER.substring(0, 30) // answer es truncado a 30 caracteres
+            ANSWER += "…"; // y se le añaden puntos al final
         }
 
         // citar la pregunta
@@ -1240,7 +1576,9 @@
         //insertNewLineAtTextArea(textarea); // insertar nueva linea en el cuadro de escritura
         await wait(50); // espera necesaria para que no coloque el texto antes que los saltos se lleven a cabo
 
-        insertText(`_*respuesta:*_ "${answer}". _*jugador:*_ @${normalizeText(name)}`); // TODO        
+        PLAYER_NUMBER = normalizeText(name);
+        setLang(currentLangID); // actualizar valor del string
+        insertText(RESPONSE_MENTION_TEXT); // TODO        
         await wait(50);
         pressTabKey(textarea); // simular pulsación de la tecla TAB
         await wait(50);
@@ -1248,7 +1586,7 @@
         insertNewLineAtTextArea(textarea, 2); // insertar nueva linea en el cuadro de escritura
         //insertNewLineAtTextArea(textarea); // insertar nueva linea en el cuadro de escritura    
         await wait(50);
-        insertText(messageTail);
+        insertText(RESPONSE_CONFIRMATION_TEXT);
 
         //await sleep(150).executeAsync();
         await wait(50);
@@ -1267,19 +1605,19 @@
 
         console.log("postScore. Detectado");
 
-        let headerText = `*_MARCADOR ACTUAL:_*`;
+        let headerText = formatText(CONGRATS_HEADER_TEXT_0);
         if (ended) {
             /* Mensaje de finalización */
-            sendMessage(`Finalizando dinámica de trivia… ¡Buen trabajo a todos!`); // mensaje inicial
+            sendMessage(ENDED_TEXT); // mensaje inicial
             await wait(3200);
             /* Mensaje de finalización */
-            headerText = `*_MARCADOR FINAL:_*`;
+            headerText = formatText(CONGRATS_HEADER_TEXT_1);
         }
 
         insertText(headerText);
         insertNewLineAtTextArea(textarea, 2); // insertar N nuevas líneas en el cuadro de escritura            
         await wait(50);
-    
+
         const sortedPeople = Object.entries(intelligentPeople).map(([participante, puntaje]) => {
             return { participante, puntaje }; // Crea un objeto con la nación y el porcentaje
         }).filter(({ puntaje }) => puntaje > 0) // Filtra puntaje criterio mayor a 0
@@ -1307,8 +1645,11 @@
                     insertText(`- `);
                 }
             }
-
-            insertText(`*${puntaje}* puntos ➨ @${normalizeText(participante)}`);
+        
+            pointNumber = puntaje;
+            PLAYER_NUMBER = normalizeText(participante);
+            setLang(currentLangID); // actualizar valor del string
+            insertText(PLAYER_SCORE_TEXT);
 
             await wait(50);
             pressTabKey(textarea); // simular pulsación de la tecla TAB
@@ -1316,19 +1657,30 @@
 
             if (ended) { // ended true | Marcador final
                 if (medals === 1 || medals === 3) {
-                    insertText(formatText(`¡${medals}er lugar!`));
+                    pointNumber = medals;
+                    setLang(currentLangID); // actualizar valor del string
+                    insertText(formatText(CONGRATS_END_TEXT_0));
                     if (medals === 3) break; // si es 3, ahí salimos
                 } else if (medals === 2) {
-                    // insertText(`*_¡${medals}do lugar!_*`);
-                    insertText(formatText(`¡${medals}do lugar!`));
+                    pointNumber = medals;
+                    setLang(currentLangID); // actualizar valor del string
+                    insertText(formatText(CONGRATS_END_TEXT_1));
+                } else if (medals === 3) {
+                    pointNumber = medals;
+                    if (currentLangID === "ES") {
+                        setLang(currentLangID); // actualizar valor del string
+                        insertText(formatText(CONGRATS_END_TEXT_0));
+                    } else {
+                        setLang(currentLangID); // actualizar valor del string
+                        insertText(formatText(CONGRATS_END_TEXT_2));
+                    }
                 }
             } else {
                 if (thinkers.includes(participante)) { // participante === thinkers[0] || participante === thinkers[1] || participante === thinkers[2]
                     // Array de mensajes de felicitación
-                    const felicitaciones = ["¡excelente!", "¡genial!", "¡asombroso!", "¡increíble!", "¡fantástico!"];
 
                     // Seleccionar un mensaje aleatorio del array
-                    const mensajeAleatorio = felicitaciones[Math.floor(Math.random() * felicitaciones.length)];
+                    const mensajeAleatorio = CONGRATULATIONS[Math.floor(Math.random() * CONGRATULATIONS.length)];
 
                     // Insertar el mensaje en el área de texto
                     insertText(formatText(mensajeAleatorio));
@@ -1484,7 +1836,10 @@
     } // completo
     /* Solo revisar respuesta */
 
-
+    // Función para generar números de entre 3 y 8 cifras.
+    function generateRandomNumber() {
+        return Math.floor(100 + Math.random() * 99999999);
+    }
 
     // Función para crear un generador de números pseudoaleatorios basado en una semilla.
     function seedRandom(seed) {
