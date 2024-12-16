@@ -1,4 +1,4 @@
-# Trivia game for WhatsApp group
+# Trivia game for WhatsApp group | ![Leer en Español](README_es.md)
 
 This userscript allows to play a trivia game in a WhatsApp group.
 
