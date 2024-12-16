@@ -17,42 +17,6 @@
     'use strict';
 
     // texto por defecto === inglés
-    /*let OPEN_UI_BUTTON_TEXT = 'Trivia'; // texto del botón
-    let TITLE_BUTTON_TEXT = 'Trivia for WhatsApp'; // texto del título
-    let QUESTION_FIELD_HINT_TEXT = 'Enter questions. One per line break.';
-    let ANSWER_FIELD_HINT_TEXT = 'Enter answers. One per line break.';
-    let CHECKBOX_TAG_TEXT = 'Tag members';
-    let CHECKBOX_TAG_NATION_TEXT = 'Nation Order';
-    let CHECKBOX_TAG_NATION_RESUME_TEXT = 'Nation Resume';
-    let CHECKBOX_REPEAT_ALL_TEXT = 'Repeat';
-    let CHECKBOX_RANDOMIZE_ORDER_TEXT = 'Randomize';
-    let CHECKBOX_ENUMERATE_TEXT = 'Enumerate';
-    let CHECKBOX_BOLD_TEXT = 'Bold';
-    let CHECKBOX_ITALIC_TEXT = 'Italic';
-    let CHECKBOX_UPPERCASE_TEXT = 'Uppercase';
-    let ANSWERS_NEEDED_TEXT = 'Correct answers';
-    let CLOSE_TEXT = 'Close';
-    let START_TEXT = 'Start game';
-    let MENTION_HEADER_TEXT = 'Mentioning members…';
-    let groupSize = 0, MENTION_RESUME_NATION_TEXT = `There are ${groupSize} members in the chat group, of which:`;
-    let MENTION_RESUME_NATION_ARE_TEXT = 'are';
-    let WARN_TEXTFIELD_EMPTY = 'It looks like some of the text fields are still empty. Please add the corresponding text.';
-    let questionNumber = 0, answerNumber = 0, WARN_TEXTFIELD_CONTENT_DONT_MATCH = `The questions number (${questionNumber}) and answers number (${answerNumber}) doesn't match. Please check.`;
-    let CANCEL_MESSAGE_TEXT = 'Trivia game ended by host.';
-    let COUNTDOWN_TEXT_0 = `Starting trivia game…`;
-    let countdownNumber = 0, COUNTDOWN_TEXT_1 = `Starting at ${countdownNumber}…`;
-    let COUNTDOWN_TEXT_2 = `Here we go!`;
-    let RESPONSE_CONFIRMATION_TEXT = `☑ *_response received_* ☑`;
-    let ANSWER = '', PLAYER_NUMBER = '', RESPONSE_MENTION_TEXT = `_*response:*_ "${ANSWER}". _*player:*_ @${PLAYER_NUMBER}`;
-    let CONGRATS_HEADER_TEXT_0 = 'Scoreboard:';
-    let CONGRATS_HEADER_TEXT_1 = 'Final scoreboard:';
-    let ENDED_TEXT = 'The trivia game has ended. Well done, participants!';
-    let pointNumber = 0, PLAYER_SCORE_TEXT = `*${pointNumber}* points ➨ @${PLAYER_NUMBER}`;
-    let CONGRATS_END_TEXT_0 = `¡${pointNumber}st place!`;
-    let CONGRATS_END_TEXT_1 = `¡${pointNumber}nd place!`;
-    let CONGRATS_END_TEXT_2 = `¡${pointNumber}rd place!`;
-    let CONGRATULATIONS = ["excellent!", "great!", "amazing!", "incredible!", "fantastic!"];*/
-
     let currentLangID = 'EN';
     let OPEN_UI_BUTTON_TEXT = 'Trivia'; // texto del botón
     let TITLE_BUTTON_TEXT = ''; // texto del título
@@ -112,7 +76,7 @@
             ANSWER_FIELD_HINT_TEXT = 'Enter answers. One per line break.';
             CHECKBOX_TAG_TEXT = 'Tag members';
             CHECKBOX_TAG_NATION_TEXT = 'Nation Order';
-            CHECKBOX_TAG_NATION_RESUME_TEXT = 'Nation Resume';
+            CHECKBOX_TAG_NATION_RESUME_TEXT = 'Nation Summary';
             CHECKBOX_REPEAT_ALL_TEXT = 'Repeat';
             CHECKBOX_RANDOMIZE_ORDER_TEXT = 'Randomize';
             CHECKBOX_ENUMERATE_TEXT = 'Enumerate';
