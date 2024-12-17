@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Trivia game for WhatsApp group
 // @namespace    http://tampermonkey.net/
-// @version      1.1
+// @version      1.12
 // @description  Allow to play trivia with people in Whatsapp group
 // @author       GiovJ-97
 // @license      AGPL-3.0
@@ -34,6 +34,8 @@
     let ANSWERS_NEEDED_TEXT = 'default';
     let CLOSE_TEXT = '';
     let START_TEXT = '';
+    let TAG_NOW_TEXT = 'default';
+    let NEXT_QUESTION_TEXT = 'default';
     let MENTION_HEADER_TEXT = '';
     let groupSize = 0, MENTION_RESUME_NATION_TEXT = ``;
     let MENTION_RESUME_NATION_ARE_TEXT = '';
@@ -56,6 +58,7 @@
 
     let isTyping = false;
     let answerFlag = false;
+    let FONT_SIZE_VALUE = '13px'
 
     let intelligentPeople = {}; // Mapa vacío
     let messageListSize = 6548; // Variable aleatoria de inicio para no coincidir al primer lanzamiento
@@ -64,7 +67,7 @@
     let runningFlag = false;
 
     // elementos traducibles
-    let openUiButton, uiTitle, textAreaQuestions, textAreaAnswers, checkboxMentionContainer, checkboxRepeatContainer, checkboxEnumerateContainer, checkboxBoldContainer, checkboxItalicContainer, checkboxUppercaseContainer, checkboxNationSortContainer, checkboxNationResumeContainer, checkboxRandomContainer, inputNumberContainer, cancelButton, startButton;
+    let openUiButton, uiTitle, textAreaQuestions, textAreaAnswers, checkboxMentionContainer, checkboxRepeatContainer, checkboxEnumerateContainer, checkboxBoldContainer, checkboxItalicContainer, checkboxUppercaseContainer, checkboxNationSortContainer, checkboxNationResumeContainer, checkboxRandomContainer, inputNumberContainer, tagNowButton, nextQuestionButton, cancelButton, startButton;
 
     let triviaDialog;
 
@@ -75,8 +78,8 @@
             QUESTION_FIELD_HINT_TEXT = 'Enter questions. One per line break.';
             ANSWER_FIELD_HINT_TEXT = 'Enter answers. One per line break.';
             CHECKBOX_TAG_TEXT = 'Tag members';
-            CHECKBOX_TAG_NATION_TEXT = 'Nation Order';
-            CHECKBOX_TAG_NATION_RESUME_TEXT = 'Nation Summary';
+            CHECKBOX_TAG_NATION_TEXT = 'Nation order';
+            CHECKBOX_TAG_NATION_RESUME_TEXT = 'Nation summary';
             CHECKBOX_REPEAT_ALL_TEXT = 'Repeat';
             CHECKBOX_RANDOMIZE_ORDER_TEXT = 'Randomize';
             CHECKBOX_ENUMERATE_TEXT = 'Enumerate';
@@ -86,6 +89,8 @@
             ANSWERS_NEEDED_TEXT = 'Correct answers';
             CLOSE_TEXT = 'Close';
             START_TEXT = 'Start game';
+            TAG_NOW_TEXT = 'Tag now';
+            NEXT_QUESTION_TEXT = 'Skip question';
             MENTION_HEADER_TEXT = 'Mentioning members…';
             MENTION_RESUME_NATION_TEXT = `There are ${groupSize} members in the chat group, of which:`;
             MENTION_RESUME_NATION_ARE_TEXT = 'are';
@@ -123,7 +128,8 @@
             ANSWERS_NEEDED_TEXT = 'Respuestas correctas';
             CLOSE_TEXT = 'Cerrar';
             START_TEXT = 'Iniciar juego';
-
+            TAG_NOW_TEXT = 'Etiquetar ahora';
+            NEXT_QUESTION_TEXT = 'Saltar pregunta';
             MENTION_HEADER_TEXT = 'Etiquetando integrantes…';
             MENTION_RESUME_NATION_TEXT = `Resumen: el grupo contiene ${groupSize} integrantes, de los cuales:`;
             MENTION_RESUME_NATION_ARE_TEXT = 'son'
@@ -135,7 +141,7 @@
             COUNTDOWN_TEXT_2 = `¡Aquí vamos!`;
             RESPONSE_CONFIRMATION_TEXT = `☑ *_respuesta detectada_* ☑`;
             RESPONSE_MENTION_TEXT = `_*respuesta:*_ "${ANSWER}". _*jugador:*_ @${PLAYER_NUMBER}`;
-            CONGRATS_HEADER_TEXT_0 = `Marcador actual`;
+            CONGRATS_HEADER_TEXT_0 = 'Marcador actual:';
             CONGRATS_HEADER_TEXT_1 = 'Marcador final:';
             ENDED_TEXT = 'Finalizando juego de trivia… ¡Buen trabajo a todos!'
             PLAYER_SCORE_TEXT = `*${pointNumber}* puntos ➨ @${PLAYER_NUMBER}`;
@@ -161,7 +167,9 @@
         checkboxItalicContainer.querySelector('.checkbox-label').textContent = CHECKBOX_ITALIC_TEXT;
         checkboxUppercaseContainer.querySelector('.checkbox-label').textContent = CHECKBOX_UPPERCASE_TEXT;
         if (inputNumberContainer.querySelector('.inputNumber-slabel') !== null) inputNumberContainer.querySelector('.inputNumber-slabel').textContent = ANSWERS_NEEDED_TEXT;
-        
+
+        tagNowButton.textContent = TAG_NOW_TEXT;
+        nextQuestionButton.textContent = NEXT_QUESTION_TEXT; 
         cancelButton.textContent = CLOSE_TEXT;
         startButton.textContent = START_TEXT;
 
@@ -221,8 +229,8 @@
             console.log("Esperando finalización de postCongrats para enviar otra pregunta");
         } // medida anti superposición de envío de pregunta
 
-        // Define si etiquetar o no    
-        if (checkboxMentionContainer.querySelector('input').checked) { // lectura a cada momento
+        // Define si etiquetar o no
+        if (checkboxMentionContainer.querySelector('input').checked) { // lectura a cada momento del checkbox
             try {
                 console.log("Etiquetando a todos");
                 await tagEveryone(true, 0)
@@ -364,7 +372,7 @@
         openUiButton.style.border = 'none';
         openUiButton.style.borderRadius = '5px';
         openUiButton.style.cursor = 'pointer';
-        openUiButton.style.fontSize = '14px';
+        openUiButton.style.fontSize = FONT_SIZE_VALUE;
         openUiButton.title = 'Prog';
 
         openUiButton.addEventListener('click', async () => {
@@ -415,7 +423,7 @@
         textAreaQuestions.style.backgroundColor = 'rgb(32, 44, 51)'; // claro
         textAreaQuestions.style.borderColor = 'rgb(32, 44, 51)'; // claro
         textAreaQuestions.style.color = 'rgb(233, 237, 239)';
-        
+
         // Crear el campo de texto 2
         textAreaAnswers = document.createElement('textarea');
         textAreaAnswers.style.width = '30%';
@@ -445,6 +453,46 @@
         checkboxContainer3rd.style.justifyContent = 'space-between';
         checkboxContainer3rd.style.marginBottom = '10px';
 
+        // plantilla de botón con etiqueta, color de descripción
+        const buttonTemplate = (labelText, backgroundColor, action, options = {}) => {
+            const button = document.createElement('button');
+            button.textContent = labelText;
+        
+            // Estilos por defecto
+            button.style.backgroundColor = backgroundColor;
+            button.style.color = 'white';
+            button.style.border = 'none';
+            button.style.borderRadius = '5px';
+            button.style.cursor = 'pointer';
+            button.style.padding = '10px';
+            button.style.fontSize = FONT_SIZE_VALUE; 
+            button.style.width = 'auto';
+            button.style.height = 'auto';
+        
+            // Opciones adicionales
+            if (options.disabled) {
+                button.disabled = true;
+            }
+        
+            if (options.width) {
+                button.style.width = options.width;
+            }
+        
+            // Añadir evento de clic, manejando funciones sync y async
+            button.addEventListener('click', async (event) => {
+                try {
+                    const result = action(event);
+                    if (result instanceof Promise) {
+                        await result;
+                    }
+                } catch (error) {
+                    console.error('Error en la acción del botón:', error);
+                }
+            });
+        
+            return button;
+        };
+        
         // plantilla de checkbox con etiqueta de descripción
         const checkboxWithLabelTemplate = (labelText, state) => {
             const container = document.createElement('div');
@@ -456,6 +504,7 @@
             checkboxLabel.className = 'checkbox-label'; // Añadir para facilitar selección
             checkboxLabel.style.color = 'rgb(233, 237, 239)';
             checkboxLabel.style.marginRight = '10px';
+            checkboxLabel.style.fontSize = FONT_SIZE_VALUE;
 
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
@@ -487,6 +536,7 @@
                 label1.className = 'inputNumber-flabel'; // Añadir para facilitar selección
                 label1.style.color = 'rgb(233, 237, 239)';
                 label1.style.marginRight = '10px';
+                label1.style.fontSize = FONT_SIZE_VALUE;
                 container.appendChild(label1);
             }
 
@@ -500,6 +550,12 @@
             inputNumber.style.color = 'rgb(233, 237, 239)';
             inputNumber.value = '3'; // tres segundos predeterminados de espera entre mensajes
             inputNumber.style.display = 'flex';
+            inputNumber.style.fontSize = FONT_SIZE_VALUE;
+
+            // Bloquear entrada manual
+            inputNumber.addEventListener('keydown', (event) => {
+                event.preventDefault(); // Bloquea cualquier entrada desde el teclado
+            });
 
             container.appendChild(inputNumber);
 
@@ -510,76 +566,13 @@
                 label2.className = 'inputNumber-slabel'; // Añadir para facilitar selección
                 label2.style.color = 'rgb(233, 237, 239)';
                 label2.style.marginLeft = '10px';
+                label2.style.fontSize = FONT_SIZE_VALUE;
                 container.appendChild(label2);
+
             }
 
             return container;
         };
-
-        /*const tabWithListTemplate = (options, listeners) => {
-            // Crear el contenedor principal
-            const container = document.createElement('div');
-            container.style.width = '200px';
-            container.style.border = '1px solid #007BFF';
-            container.style.borderRadius = '5px';
-            container.style.overflow = 'hidden';
-
-            // Crear el botón de la pestaña
-            const tabButton = document.createElement('button');
-            tabButton.textContent = 'Mostrar Opciones';
-            tabButton.style.backgroundColor = '#007BFF';
-            tabButton.style.color = 'white';
-            tabButton.style.padding = '10px';
-            tabButton.style.border = 'none';
-            tabButton.style.width = '100%';
-            tabButton.style.cursor = 'pointer';
-
-            // Crear el contenedor de la lista
-            const listContainer = document.createElement('ul');
-            listContainer.style.listStyle = 'none';
-            listContainer.style.padding = '0';
-            listContainer.style.margin = '0';
-            listContainer.style.display = 'none';
-            listContainer.style.borderTop = '1px solid #007BFF';
-
-            // Crear los elementos de la lista
-            options.forEach((option, index) => {
-                const listItem = document.createElement('li');
-                listItem.textContent = option;
-                listItem.style.padding = '10px';
-                listItem.style.cursor = 'pointer';
-                listItem.style.borderBottom = '1px solid #ddd';
-
-                // Agregar el evento de clic
-                listItem.addEventListener('click', () => {
-                    if (listeners[index]) {
-                        listeners[index]();
-                    }
-                });
-
-                // Estilo de hover
-                listItem.addEventListener('mouseover', () => {
-                    listItem.style.backgroundColor = '#f0f0f0';
-                });
-                listItem.addEventListener('mouseout', () => {
-                    listItem.style.backgroundColor = 'white';
-                });
-
-                listContainer.appendChild(listItem);
-            });
-
-            // Alternar la visibilidad de la lista al hacer clic en el botón
-            tabButton.addEventListener('click', () => {
-                listContainer.style.display =
-                    listContainer.style.display === 'none' ? 'block' : 'none';
-            });
-
-            // Agregar el botón y la lista al contenedor principal
-            container.appendChild(tabButton);
-            container.appendChild(listContainer);
-
-            return container;
-        };*/
 
         const tabWithListTemplate = (options, listeners) => {
             // Crear contenedor del menú desplegable
@@ -590,25 +583,30 @@
             const button = document.createElement('button');
             button.className = 'dropdown-button';
             button.textContent = 'Language';
-            button.style.backgroundColor = '#007BFF'; // Color de fondo azul
-            button.style.color = 'white'; // Texto blanco
+            button.style.backgroundColor = 'rgb(100, 149, 237)'; // Color de fondo azul
+            button.style.color = 'rgb(233, 237, 239)'; // Texto blanco
             button.style.border = 'none';
             button.style.padding = '10px 20px';
             button.style.cursor = 'pointer';
             button.style.borderRadius = '5px';
+            button.style.width = 'auto'; // Ancho fijo para el botón (opcional)
+            button.style.fontSize = FONT_SIZE_VALUE;
             dropdown.appendChild(button);
 
             // Contenedor de la lista desplegable
             const list = document.createElement('ul');
             list.className = 'dropdown-list';
             list.style.display = 'none'; // Oculto por defecto
-            list.style.backgroundColor = '#f8f9fa'; // Fondo claro
+            list.style.backgroundColor = 'rgb(17, 27, 33)'; // oscuro
             list.style.border = '1px solid #ccc';
+            list.style.borderColor = 'rgb(32, 44, 51)';
             list.style.padding = '0';
             list.style.margin = '5px 0 0';
             list.style.borderRadius = '5px';
             list.style.listStyle = 'none';
             list.style.position = 'absolute';
+            list.style.width = `${button.offsetWidth}px`; // Igualar ancho del botón
+            list.style.boxShadow = 'none'; // Eliminar sombra por defecto
 
             // Crear los elementos de la lista con listeners
             options.forEach((option, index) => {
@@ -617,14 +615,21 @@
                 listItem.textContent = option;
                 listItem.style.padding = '10px';
                 listItem.style.cursor = 'pointer';
-                listItem.style.borderBottom = '1px solid #ddd';
+                listItem.style.borderColor = 'rgb(32, 44, 51)';
+                listItem.style.width = '100%'; // Ajustar al ancho del contenedor padre (ul)
+                listItem.style.boxSizing = 'border-box'; // Incluir padding y border en el ancho total
+                listItem.style.transition = 'background-color 0.2s ease';
+                listItem.style.fontSize = FONT_SIZE_VALUE;
 
                 listItem.addEventListener('mouseover', () => {
-                    listItem.style.backgroundColor = '#e9ecef'; // Fondo al pasar el cursor
+                    listItem.style.backgroundColor = 'rgb(32, 44, 51)'; // Fondo al pasar el cursor
+                    // Una sombra sutil que no se expanda
+                    listItem.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
                 });
 
                 listItem.addEventListener('mouseout', () => {
                     listItem.style.backgroundColor = 'transparent';
+                    listItem.style.boxShadow = 'none';
                 });
 
                 // Asignar el listener correspondiente
@@ -641,6 +646,7 @@
 
             // Toggle para abrir/cerrar el menú
             button.addEventListener('click', () => {
+                list.style.width = `${button.offsetWidth}px`; // Ajustar el ancho de la lista desplegable
                 list.style.display = list.style.display === 'none' ? 'block' : 'none';
             });
 
@@ -666,13 +672,40 @@
         checkboxUppercaseContainer = checkboxWithLabelTemplate(CHECKBOX_UPPERCASE_TEXT, true);
         inputNumberContainer = inputNumberWithLabelTemplate('', ANSWERS_NEEDED_TEXT);
 
+        tagNowButton = buttonTemplate(TAG_NOW_TEXT, 'rgb(100, 149, 237)', async () => {
+            let boolean = false;
+            if (runningFlag === false) {
+                runningFlag = true;
+                boolean = true;
+            }
+            try {
+                console.log("Etiquetando a todos bajo demanda");
+                await tagEveryone(true, 0)
+            } catch (error) {
+                console.log(`Fallo en tagEveryone ${error.message}`);
+                // throw error
+            }
+            if (boolean === true) runningFlag = false;
+        });
+        
+        nextQuestionButton = buttonTemplate(NEXT_QUESTION_TEXT, 'rgb(100, 149, 237)', async () => {
+            const value = inputNumberContainer.querySelector('input[type="number"]').value.trim();
+            inputNumberContainer.querySelector('input[type="number"]').value = '0';
+            await wait(300);
+            inputNumberContainer.querySelector('input[type="number"]').value = value;
+        });
+
         // Añadir checkboxes al contenedor
         checkboxContainer1st.appendChild(checkboxMentionContainer);
         checkboxContainer1st.appendChild(checkboxNationSortContainer);
         checkboxContainer1st.appendChild(checkboxNationResumeContainer);
+        checkboxContainer1st.appendChild(tagNowButton);
+
         checkboxContainer2nd.appendChild(checkboxRepeatContainer);
         checkboxContainer2nd.appendChild(checkboxRandomContainer);
         checkboxContainer2nd.appendChild(inputNumberContainer);
+        checkboxContainer2nd.appendChild(nextQuestionButton);
+
         checkboxContainer3rd.appendChild(checkboxEnumerateContainer);
         checkboxContainer3rd.appendChild(checkboxBoldContainer);
         checkboxContainer3rd.appendChild(checkboxItalicContainer);
@@ -684,53 +717,17 @@
         buttonContainer.style.justifyContent = 'space-between';
         buttonContainer.style.marginTop = '20px';
 
-        // Crear botón de cancelación
-        cancelButton = document.createElement('button');
-        cancelButton.textContent = CLOSE_TEXT;
-        cancelButton.style.backgroundColor = '#f44336';
-        cancelButton.style.color = 'white';
-        cancelButton.style.border = 'none';
-        cancelButton.style.borderRadius = '5px';
-        cancelButton.style.cursor = 'pointer';
-        cancelButton.style.padding = '10px';
-        cancelButton.style.fontSize = '14px';
-
-        // listener para el botón
-        cancelButton.addEventListener('click', () => {
-            runningFlag = false; // Variable de clase que avisa de la cancelación del script
-            sendMessage(CANCEL_MESSAGE_TEXT, 0);
-            triviaDialog.remove(); // Cerrar el diálogo al hacer clic en "Cancelar"
-        });
-        
         // Crear botón de envío
-        startButton = document.createElement('button');
-        startButton.textContent = START_TEXT;
-        startButton.style.backgroundColor = '#128C7E';
-        startButton.style.color = 'white';
-        startButton.style.border = 'none';
-        startButton.style.borderRadius = '5px';
-        startButton.style.cursor = 'pointer';
-        startButton.style.padding = '10px';
-        startButton.style.fontSize = '14px';
-
-        // listener para el botón
-        startButton.addEventListener('click', async () => {
+        startButton = buttonTemplate(START_TEXT, 'rgb(18, 140, 126)', async () => {
+            // Acción al hacer clic
             runningFlag = true;
             const questionsText = textAreaQuestions.value.trim(); // obtiene el texto del campo de preguntas
             const answersText = textAreaAnswers.value.trim(); // obtiene el texto del campo de respuestas
 
             if (questionsText && answersText) { // Continuar si no son nulos TODO
-                /* Obtenemos el valor del delay en milisegundo                     
-                let delayMilliseconds = parseInt(inputNumberContainer.querySelector('input[type="number"]').value.trim()) * 1000;
-                // Impide la activación si el valor de los segundos está vacío o es menor que 0
-                if (isNaN(delayMilliseconds) || delayMilliseconds < 0) {
-                    alert('El valor de tiempo entre mensajes debe ser un número entero positivo.');
-                    return;
-                } */        
-
                 let questionList = questionsText.split(/[\n\t]+/).map(line => line.trim()).filter(line => line); // romper en líneas el contenido del cuadro de texto de las respuestas
                 let answerList = answersText.split(/[\n\t]+/).map(line => line.trim()).filter(line => line); // romper en líneas, lista de elementos
-                // if aleatorizar preguntas está pulsado: 
+                // if aleatorizar preguntas está pulsado:
                 if (checkboxRandomContainer.querySelector('input').checked) {
                     const randomNumber = generateRandomNumber();
                     questionList = shuffleArrayWithSeed(questionList, randomNumber); // La semilla debe ser la misma para mantener el patrón
@@ -798,11 +795,21 @@
                     }
                 }
                 console.log(`Envío completado, ${questionList.length} mensajes enviados`);
-                //showToast(`Envío completado, ${questionList.length} mensajes enviados`, 5000); // Aparecerá durante 5 segundos              
+                //showToast(`Envío completado, ${questionList.length} mensajes enviados`, 5000); // Aparecerá durante 5 segundos
                 // dialog.remove(); // Cerrar el diálogo
             } else {
                 alert(WARN_TEXTFIELD_EMPTY);
             }
+        }, {
+            disabled: false,
+            width: 'auto'
+        });
+
+        // Crear botón de cancelación
+        cancelButton = buttonTemplate(CLOSE_TEXT, 'rgb(244, 67, 54)', () => {
+            runningFlag = false; // Variable de clase que avisa de la cancelación del script
+            sendMessage(CANCEL_MESSAGE_TEXT, 0);
+            triviaDialog.remove(); // Cerrar el diálogo al hacer clic en "Cancelar"
         });
 
         // Ejemplo de uso
@@ -829,7 +836,7 @@
         // Añadir el diálogo al cuerpo del documento
         document.body.appendChild(triviaDialog);
 
-        // Establecer valores predeterminados para los checkboxes         
+        // Establecer valores predeterminados para los checkboxes
         checkboxEnumerateContainer.querySelector('input[type="checkbox"]').click();
         checkboxBoldContainer.querySelector('input[type="checkbox"]').click();
         checkboxItalicContainer.querySelector('input[type="checkbox"]').click();
@@ -1125,9 +1132,9 @@
                 const number = i + 1
                 const formattedNumber = number.toString().padStart(3, '0');
                 insertText(`${formattedNumber}.- @${normalizeText(user)}`);
-                //document.execCommand('insertText', false, `${formattedNumber}.- @`);                
+                //document.execCommand('insertText', false, `${formattedNumber}.- @`);
 
-                //document.execCommand('insertText', false, normalizeText(user)) 
+                //document.execCommand('insertText', false, normalizeText(user))
 
                 await sleep(50).executeAsync();
 
@@ -1322,7 +1329,7 @@
                 while (true) {
                     if (!isTyping) {
                         try {
-                            await postScore(false, thinkers); // enviar array con los que respondieron correctamente                           
+                            await postScore(false, thinkers); // enviar array con los que respondieron correctamente
                             console.log("postScore terminado");
                         } catch (error) {
                             console.error("postScore fallido:", error);
@@ -1374,10 +1381,10 @@
                 }
             }
 
-            // Introducir una pausa para evitar bloqueo        
+            // Introducir una pausa para evitar bloqueo
             await wait(300);
         }
-    } // completo (llamar a checkAnswer como primer paso)    
+    } // completo (llamar a checkAnswer como primer paso)
 
     function getLastMessageData() {
         const messageListContainer = document.querySelector('.x3psx0u.xwib8y2.xkhd6sd.xrmvbpv'); // obtención del contenedor de mensajes.
@@ -1521,7 +1528,7 @@
         }
         isTyping = true;
 
-        // if(!correctAnswer) messageTail = "*_¡respuesta incorrecta!_*"; // respuesta incorrecta                    
+        // if(!correctAnswer) messageTail = "*_¡respuesta incorrecta!_*"; // respuesta incorrecta
 
         const textarea = getInputTextArea(); // obtención de cuadro de escritura
         textarea.focus(); // enfocar área de escritura de texto
@@ -1542,13 +1549,13 @@
 
         PLAYER_NUMBER = normalizeText(name);
         setLang(currentLangID); // actualizar valor del string
-        insertText(RESPONSE_MENTION_TEXT); // TODO        
+        insertText(RESPONSE_MENTION_TEXT); // TODO
         await wait(50);
         pressTabKey(textarea); // simular pulsación de la tecla TAB
         await wait(50);
 
         insertNewLineAtTextArea(textarea, 2); // insertar nueva linea en el cuadro de escritura
-        //insertNewLineAtTextArea(textarea); // insertar nueva linea en el cuadro de escritura    
+        //insertNewLineAtTextArea(textarea); // insertar nueva linea en el cuadro de escritura
         await wait(50);
         insertText(RESPONSE_CONFIRMATION_TEXT);
 
@@ -1556,7 +1563,7 @@
         await wait(50);
         clickSendButton(); // enviar felicitación
         //await sleep(150).executeAsync();
-        await wait(500); // esperar a que se envíe        
+        await wait(500); // esperar a que se envíe
 
         isTyping = false;
     } // completo
@@ -1579,13 +1586,13 @@
         }
 
         insertText(headerText);
-        insertNewLineAtTextArea(textarea, 2); // insertar N nuevas líneas en el cuadro de escritura            
+        insertNewLineAtTextArea(textarea, 2); // insertar N nuevas líneas en el cuadro de escritura
         await wait(50);
 
         const sortedPeople = Object.entries(intelligentPeople).map(([participante, puntaje]) => {
             return { participante, puntaje }; // Crea un objeto con la nación y el porcentaje
         }).filter(({ puntaje }) => puntaje > 0) // Filtra puntaje criterio mayor a 0
-            .sort((a, b) => b.puntaje - a.puntaje); // Ordena de mayor a menor        
+            .sort((a, b) => b.puntaje - a.puntaje); // Ordena de mayor a menor
 
         /*
         const sortedPeople = Object.entries(intelligentPeople).map(([participante, puntaje]) => {
@@ -1609,7 +1616,7 @@
                     insertText(`- `);
                 }
             }
-        
+
             pointNumber = puntaje;
             PLAYER_NUMBER = normalizeText(participante);
             setLang(currentLangID); // actualizar valor del string
@@ -1657,7 +1664,7 @@
             medals++
             if (medals - 1 !== sortedPeople.length) { // si contador diferente del total
                 console.log(`postScore. Insertando nueva línea`);
-                insertNewLineAtTextArea(textarea); // insertar nueva linea en el cuadro de escritura                    
+                insertNewLineAtTextArea(textarea); // insertar nueva linea en el cuadro de escritura
             }
             await wait(50);
         }
@@ -1753,7 +1760,7 @@
         }
 
         return user;
-    } // completo   
+    } // completo
 
     async function insertNewLineAtTextArea(textarea, repeat = 1) {
         // Enfocar el área de texto una vez al principio
