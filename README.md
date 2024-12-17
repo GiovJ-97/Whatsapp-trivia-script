@@ -42,6 +42,12 @@ About the game:
 3. Warn your players that it is possible for two or more responses to arrive at the same time, and the script might not detect them. If this happens, players should resend their responses. However, if the script displays `response detected`, no further action is required from the player.
 5. Players can make as many attempts as they want, but warn them that each wrong response reduces their points by 1.
 
+## v1.12 update
+
+Since version 1.12, you will have two buttons: one to tag group members at any time (especially before the game starts) and another to skip the current question (for instance, if players are not responding to the question, you can skip it):
+
+![Trivia game for WhatsApp group](misc/ui_1.12.png)
+
 If you like this project and want to support it, please consider making a donation:
 [![Donate](https://raw.githubusercontent.com/stefan-niedermann/paypal-donate-button/master/paypal-donate-button.png)](https://paypal.me/DrSigilo?country.x=MX&locale.x=es_XC)
 
