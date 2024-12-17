@@ -36,7 +36,7 @@ This userscript allows to play a trivia game in a WhatsApp group.
 - `Italic` to italicize all the questions and text.
 - `Uppercase` to convert all the questions and text to uppercase.
 
-About the game:
+### About the game:
 1. Once the game begins, this script counts correct answers. The first correct answer earns [`Correct Answers` number + 2] points, and subsequent correct responses earn [`Correct Answers` number + 1] points.
 2. When the required number of correct answers is reached, the scoreboard is displayed. When the game ends, the final scoreboard is shown.
 3. Warn your players that it is possible for two or more responses to arrive at the same time, and the script might not detect them. If this happens, players should resend their responses. However, if the script displays `response detected`, no further action is required from the player.
