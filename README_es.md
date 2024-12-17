@@ -36,11 +36,17 @@ Este script permite jugar a un juego de trivia en un grupo de WhatsApp.
 - `Cursiva` para poner en cursiva todas las preguntas y el texto.
 - `Mayúscula` para convertir todas las preguntas y el texto a mayúsculas.
 
-About the game:
+### Acerca del juego:
 1. Una vez que comienza el juego, este script cuenta las respuestas correctas mediante puntos. La primera respuesta correcta gana [`Correct Answers` number + 2] puntos, y las respuestas correctas posteriores ganan [(`Correct Answers` number + 2) - 1] puntos.
 2. Cuando se alcanza el número requerido de respuestas correctas, se muestra el marcador. Cuando termina el juego, se muestra el marcador final.
 3. Advierte a tus jugadores que es posible que lleguen dos o más respuestas al mismo tiempo y que el script no las detecte. Si esto sucede, los jugadores deben volver a enviar sus respuestas. Sin embargo, si el script muestra `respuesta detectada`, no se requiere ninguna acción adicional por parte del jugador.
 5. Los jugadores pueden realizar tantos intentos como quieran, pero advierteles que cada respuesta incorrecta reduce sus puntos en 1.
+
+## Actualización v1.12
+
+Desde la versión 1.12, tendrás dos botones: uno para etiquetar a los miembros del grupo en cualquier momento (especialmente antes de que comience el juego) y otro para omitir la pregunta actual (por ejemplo, si los jugadores no están respondiendo a la pregunta, puedes omitirla):
+
+![Trivia game for WhatsApp group](misc/ui_1.12.png)
 
 Si te gusta este proyecto y quieres apoyarlo, considera hacer una donación:
 [![Donate](https://raw.githubusercontent.com/stefan-niedermann/paypal-donate-button/master/paypal-donate-button.png)](https://paypal.me/DrSigilo?country.x=MX&locale.x=es_XC)
