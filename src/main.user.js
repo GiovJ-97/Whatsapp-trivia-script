@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Trivia game for WhatsApp group
 // @namespace    http://tampermonkey.net/
-// @version      1.12
+// @version      1.12.1
 // @description  Allow to play trivia with people in Whatsapp group
 // @author       GiovJ-97
 // @license      AGPL-3.0
@@ -15,6 +15,15 @@
 
 (function () {
     'use strict';
+
+    // colores
+    let COLOR_UI_BACKGROUND = 'rgb(17, 27, 33)'; // verde oscuro de fondo
+    let COLOR_UI_BORDER = 'rgb(32, 44, 51)'; // verde de bordes
+    let COLOR_UI_TEXT = 'rgb(233, 237, 239)'; // color del texto
+    let COLOR_UI_COMMON_BUTTON = 'rgb(100, 149, 237)'; // color del botón común
+    let COLOR_UI_START_BUTTON = 'rgb(18, 140, 126)'; // color del botón de inicio
+    let COLOR_UI_CANCEL_BUTTON = 'rgb(244, 67, 54)'; // color del botón de inicio
+    let COLOR_UI_TOAST = 'rgba(0, 0, 0, 0.8)'; // color del mensaje emergente
 
     // texto por defecto === inglés
     let currentLangID = 'EN';
@@ -34,6 +43,8 @@
     let ANSWERS_NEEDED_TEXT = 'default';
     let CLOSE_TEXT = '';
     let START_TEXT = '';
+    let CHECKBOX_CLOSE_TEXT = 'default';
+    let CHECKBOX_START_TEXT = 'default';
     let TAG_NOW_TEXT = 'default';
     let NEXT_QUESTION_TEXT = 'default';
     let MENTION_HEADER_TEXT = '';
@@ -55,6 +66,7 @@
     let CONGRATS_END_TEXT_1 = ``;
     let CONGRATS_END_TEXT_2 = ``;
     let CONGRATULATIONS = ["", "", "", "", ""];
+    let NO_USERS_IN_CHAT_GROUP_TEXT = "default";
 
     let isTyping = false;
     let answerFlag = false;
@@ -89,6 +101,8 @@
             ANSWERS_NEEDED_TEXT = 'Correct answers';
             CLOSE_TEXT = 'Close';
             START_TEXT = 'Start game';
+            CHECKBOX_CLOSE_TEXT = 'Exit confirmation';
+            CHECKBOX_START_TEXT = 'Pre-start countdown';
             TAG_NOW_TEXT = 'Tag now';
             NEXT_QUESTION_TEXT = 'Skip question';
             MENTION_HEADER_TEXT = 'Mentioning members…';
@@ -110,6 +124,7 @@
             CONGRATS_END_TEXT_1 = `¡${pointNumber}nd place!`;
             CONGRATS_END_TEXT_2 = `¡${pointNumber}rd place!`;
             CONGRATULATIONS = ["excellent!", "great!", "amazing!", "incredible!", "fantastic!"];
+            NO_USERS_IN_CHAT_GROUP_TEXT = "No users found in the group chat.";
         } else if (lang === 'ES') {
             // español
             OPEN_UI_BUTTON_TEXT = 'Trivia'; // texto del botón
@@ -128,6 +143,8 @@
             ANSWERS_NEEDED_TEXT = 'Respuestas correctas';
             CLOSE_TEXT = 'Cerrar';
             START_TEXT = 'Iniciar juego';
+            CHECKBOX_CLOSE_TEXT = 'Confirmación al salir';
+            CHECKBOX_START_TEXT = 'Cuenta regresiva';
             TAG_NOW_TEXT = 'Etiquetar ahora';
             NEXT_QUESTION_TEXT = 'Saltar pregunta';
             MENTION_HEADER_TEXT = 'Etiquetando integrantes…';
@@ -135,7 +152,7 @@
             MENTION_RESUME_NATION_ARE_TEXT = 'son'
             WARN_TEXTFIELD_EMPTY = 'Parece que alguno de los campos de texto aún está vacío. Añada el texto correspondiente.'
             WARN_TEXTFIELD_CONTENT_DONT_MATCH = `La cantidad de preguntas (${questionNumber}) y respuestas (${answerNumber}) no concuerda. Por favor, verifíquelo.`
-            CANCEL_MESSAGE_TEXT = 'Juego de trivia terminado por el anfitrión.';
+            CANCEL_MESSAGE_TEXT = 'Juego de trivia terminado por el anfitrión/a.';
             COUNTDOWN_TEXT_0 = `Iniciando juego de trivia…`;
             COUNTDOWN_TEXT_1 = `Iniciando en ${countdownNumber}…`;
             COUNTDOWN_TEXT_2 = `¡Aquí vamos!`;
@@ -149,6 +166,7 @@
             CONGRATS_END_TEXT_1 = `¡${pointNumber}do lugar!`;
             CONGRATS_END_TEXT_2 = `¡${pointNumber}er lugar!`;
             CONGRATULATIONS = ["¡excelente!", "¡genial!", "¡asombroso!", "¡increíble!", "¡fantástico!"];
+            NO_USERS_IN_CHAT_GROUP_TEXT = "No se encontraron usuarios en el chat grupal";
         }
 
         // se actualiza el texto el texto en los componentes
@@ -168,10 +186,13 @@
         checkboxUppercaseContainer.querySelector('.checkbox-label').textContent = CHECKBOX_UPPERCASE_TEXT;
         if (inputNumberContainer.querySelector('.inputNumber-slabel') !== null) inputNumberContainer.querySelector('.inputNumber-slabel').textContent = ANSWERS_NEEDED_TEXT;
 
-        tagNowButton.textContent = TAG_NOW_TEXT;
-        nextQuestionButton.textContent = NEXT_QUESTION_TEXT; 
-        cancelButton.textContent = CLOSE_TEXT;
-        startButton.textContent = START_TEXT;
+        tagNowButton.querySelector('.button').textContent = TAG_NOW_TEXT;
+        nextQuestionButton.querySelector('.button').textContent = NEXT_QUESTION_TEXT;
+
+        cancelButton.querySelector('.checkbox-label').textContent = CHECKBOX_CLOSE_TEXT;
+        startButton.querySelector('.checkbox-label').textContent = CHECKBOX_START_TEXT;     
+        cancelButton.querySelector('.button').textContent = CLOSE_TEXT;
+        startButton.querySelector('.button').textContent = START_TEXT;
 
         currentLangID = lang;
     }
@@ -204,7 +225,7 @@
         console.log("Iniciando sendTextLine");
 
         /* Mensaje de preparación */
-        if (currentQuestionNumber === 0) { // Mensaje introductorio: solo si es la primera pregunta
+        if (currentQuestionNumber === 0 && startButton.querySelector('input[type="checkbox"]').checked) { // Mensaje introductorio: solo si es la primera pregunta
             for (let i = 2; i >= currentQuestionNumber; i--) {
                 if (runningFlag) {
                     if (i === 2) {
@@ -391,9 +412,9 @@
         triviaDialog.style.transform = 'translate(-50%, -50%)';
         triviaDialog.style.width = '80%';
         triviaDialog.style.maxWidth = '550px';
-        triviaDialog.style.backgroundColor = 'rgb(17, 27, 33)'; // oscuro
+        triviaDialog.style.backgroundColor = COLOR_UI_BACKGROUND; // oscuro
         triviaDialog.style.border = '2px solid #ccc';
-        triviaDialog.style.borderColor = 'rgb(32, 44, 51)';
+        triviaDialog.style.borderColor = COLOR_UI_BORDER;
         triviaDialog.style.borderRadius = '5px';
         triviaDialog.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.1)';
         triviaDialog.style.padding = '20px';
@@ -404,7 +425,7 @@
         // Crear el título
         uiTitle = document.createElement('h2');
         uiTitle.textContent = TITLE_BUTTON_TEXT;
-        uiTitle.style.color = 'rgb(233, 237, 239)';
+        uiTitle.style.color = COLOR_UI_TEXT;
         uiTitle.style.marginBottom = '20px';
         triviaDialog.appendChild(uiTitle);
 
@@ -420,9 +441,9 @@
         textAreaQuestions.style.height = '140px';
         textAreaQuestions.style.marginBottom = '10px';
         textAreaQuestions.placeholder = QUESTION_FIELD_HINT_TEXT;
-        textAreaQuestions.style.backgroundColor = 'rgb(32, 44, 51)'; // claro
-        textAreaQuestions.style.borderColor = 'rgb(32, 44, 51)'; // claro
-        textAreaQuestions.style.color = 'rgb(233, 237, 239)';
+        textAreaQuestions.style.backgroundColor = COLOR_UI_BORDER; // claro
+        textAreaQuestions.style.borderColor = COLOR_UI_BORDER; // claro
+        textAreaQuestions.style.color = COLOR_UI_TEXT;
 
         // Crear el campo de texto 2
         textAreaAnswers = document.createElement('textarea');
@@ -430,9 +451,9 @@
         textAreaAnswers.style.height = '140px';
         textAreaAnswers.style.marginBottom = '10px';
         textAreaAnswers.placeholder = ANSWER_FIELD_HINT_TEXT;
-        textAreaAnswers.style.backgroundColor = 'rgb(32, 44, 51)'; // claro
-        textAreaAnswers.style.borderColor = 'rgb(32, 44, 51)'; // claro
-        textAreaAnswers.style.color = 'rgb(233, 237, 239)';
+        textAreaAnswers.style.backgroundColor = COLOR_UI_BORDER; // claro
+        textAreaAnswers.style.borderColor = COLOR_UI_BORDER; // claro
+        textAreaAnswers.style.color = COLOR_UI_TEXT;
 
         textContainer.appendChild(textAreaQuestions);
         textContainer.appendChild(textAreaAnswers);
@@ -454,13 +475,39 @@
         checkboxContainer3rd.style.marginBottom = '10px';
 
         // plantilla de botón con etiqueta, color de descripción
-        const buttonTemplate = (labelText, backgroundColor, action, options = {}) => {
+        const checkboxWithLabelAndButtonTemplate = (checkboxText = '', buttonText, backgroundColor, action, options = {}) => {
+            // Crear contenedor principal
+            const container = document.createElement('div');
+            container.style.display = 'flex';
+            container.style.alignItems = 'center';
+
+            if (checkboxText) {
+                const checkboxLabel = document.createElement('label');
+                checkboxLabel.textContent = checkboxText;
+                checkboxLabel.className = 'checkbox-label'; // Añadir para facilitar selección
+                checkboxLabel.style.color = COLOR_UI_TEXT;
+                checkboxLabel.style.marginRight = '10px';
+                checkboxLabel.style.fontSize = FONT_SIZE_VALUE;
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.style.marginRight = '5px';
+                // if (!state) checkbox.disabled = true;            
+
+                checkboxLabel.addEventListener('click', () => {
+                    checkbox.click();
+                });
+
+                container.appendChild(checkbox);
+                container.appendChild(checkboxLabel);
+            }
+            
             const button = document.createElement('button');
-            button.textContent = labelText;
-        
+            button.className = 'button';
+            button.textContent = buttonText;
             // Estilos por defecto
             button.style.backgroundColor = backgroundColor;
-            button.style.color = 'white';
+            button.style.color = COLOR_UI_TEXT;
             button.style.border = 'none';
             button.style.borderRadius = '5px';
             button.style.cursor = 'pointer';
@@ -468,6 +515,9 @@
             button.style.fontSize = FONT_SIZE_VALUE; 
             button.style.width = 'auto';
             button.style.height = 'auto';
+            button.style.whiteSpace = 'nowrap'; // Evitar múltiples líneas
+            button.style.overflow = 'hidden'; // Evitar desbordamiento del texto
+            button.style.textOverflow = 'ellipsis'; // Mostrar "..." si el texto es demasiado largo
         
             // Opciones adicionales
             if (options.disabled) {
@@ -489,8 +539,10 @@
                     console.error('Error en la acción del botón:', error);
                 }
             });
+
+            container.appendChild(button);
         
-            return button;
+            return container;
         };
         
         // plantilla de checkbox con etiqueta de descripción
@@ -502,7 +554,7 @@
             const checkboxLabel = document.createElement('label');
             checkboxLabel.textContent = labelText;
             checkboxLabel.className = 'checkbox-label'; // Añadir para facilitar selección
-            checkboxLabel.style.color = 'rgb(233, 237, 239)';
+            checkboxLabel.style.color = COLOR_UI_TEXT;
             checkboxLabel.style.marginRight = '10px';
             checkboxLabel.style.fontSize = FONT_SIZE_VALUE;
 
@@ -534,7 +586,7 @@
                 const label1 = document.createElement('label');
                 label1.textContent = labelText1;
                 label1.className = 'inputNumber-flabel'; // Añadir para facilitar selección
-                label1.style.color = 'rgb(233, 237, 239)';
+                label1.style.color = COLOR_UI_TEXT;
                 label1.style.marginRight = '10px';
                 label1.style.fontSize = FONT_SIZE_VALUE;
                 container.appendChild(label1);
@@ -545,9 +597,9 @@
             inputNumber.type = 'number';
             inputNumber.min = '0';
             inputNumber.style.width = '16%';
-            inputNumber.style.backgroundColor = 'rgb(32, 44, 51)'; // claro
-            inputNumber.style.borderColor = 'rgb(32, 44, 51)'; // claro
-            inputNumber.style.color = 'rgb(233, 237, 239)';
+            inputNumber.style.backgroundColor = COLOR_UI_BORDER; // claro
+            inputNumber.style.borderColor = COLOR_UI_BORDER; // claro
+            inputNumber.style.color = COLOR_UI_TEXT;
             inputNumber.value = '3'; // tres segundos predeterminados de espera entre mensajes
             inputNumber.style.display = 'flex';
             inputNumber.style.fontSize = FONT_SIZE_VALUE;
@@ -564,7 +616,7 @@
                 const label2 = document.createElement('label');
                 label2.textContent = labelText2;
                 label2.className = 'inputNumber-slabel'; // Añadir para facilitar selección
-                label2.style.color = 'rgb(233, 237, 239)';
+                label2.style.color = COLOR_UI_TEXT;
                 label2.style.marginLeft = '10px';
                 label2.style.fontSize = FONT_SIZE_VALUE;
                 container.appendChild(label2);
@@ -583,8 +635,8 @@
             const button = document.createElement('button');
             button.className = 'dropdown-button';
             button.textContent = 'Language';
-            button.style.backgroundColor = 'rgb(100, 149, 237)'; // Color de fondo azul
-            button.style.color = 'rgb(233, 237, 239)'; // Texto blanco
+            button.style.backgroundColor = COLOR_UI_COMMON_BUTTON; // Color de fondo azul
+            button.style.color = COLOR_UI_TEXT; // Texto blanco
             button.style.border = 'none';
             button.style.padding = '10px 20px';
             button.style.cursor = 'pointer';
@@ -597,9 +649,9 @@
             const list = document.createElement('ul');
             list.className = 'dropdown-list';
             list.style.display = 'none'; // Oculto por defecto
-            list.style.backgroundColor = 'rgb(17, 27, 33)'; // oscuro
+            list.style.backgroundColor = COLOR_UI_BACKGROUND;
             list.style.border = '1px solid #ccc';
-            list.style.borderColor = 'rgb(32, 44, 51)';
+            list.style.borderColor = COLOR_UI_BORDER;
             list.style.padding = '0';
             list.style.margin = '5px 0 0';
             list.style.borderRadius = '5px';
@@ -615,14 +667,14 @@
                 listItem.textContent = option;
                 listItem.style.padding = '10px';
                 listItem.style.cursor = 'pointer';
-                listItem.style.borderColor = 'rgb(32, 44, 51)';
+                listItem.style.borderColor = COLOR_UI_BORDER;
                 listItem.style.width = '100%'; // Ajustar al ancho del contenedor padre (ul)
                 listItem.style.boxSizing = 'border-box'; // Incluir padding y border en el ancho total
                 listItem.style.transition = 'background-color 0.2s ease';
                 listItem.style.fontSize = FONT_SIZE_VALUE;
 
                 listItem.addEventListener('mouseover', () => {
-                    listItem.style.backgroundColor = 'rgb(32, 44, 51)'; // Fondo al pasar el cursor
+                    listItem.style.backgroundColor = COLOR_UI_BORDER; // Fondo al pasar el cursor
                     // Una sombra sutil que no se expanda
                     listItem.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
                 });
@@ -672,7 +724,7 @@
         checkboxUppercaseContainer = checkboxWithLabelTemplate(CHECKBOX_UPPERCASE_TEXT, true);
         inputNumberContainer = inputNumberWithLabelTemplate('', ANSWERS_NEEDED_TEXT);
 
-        tagNowButton = buttonTemplate(TAG_NOW_TEXT, 'rgb(100, 149, 237)', async () => {
+        tagNowButton = checkboxWithLabelAndButtonTemplate('', TAG_NOW_TEXT, COLOR_UI_COMMON_BUTTON, async () => {
             let boolean = false;
             if (runningFlag === false) {
                 runningFlag = true;
@@ -688,7 +740,7 @@
             if (boolean === true) runningFlag = false;
         });
         
-        nextQuestionButton = buttonTemplate(NEXT_QUESTION_TEXT, 'rgb(100, 149, 237)', async () => {
+        nextQuestionButton = checkboxWithLabelAndButtonTemplate('', NEXT_QUESTION_TEXT, COLOR_UI_COMMON_BUTTON, async () => {
             const value = inputNumberContainer.querySelector('input[type="number"]').value.trim();
             inputNumberContainer.querySelector('input[type="number"]').value = '0';
             await wait(300);
@@ -701,7 +753,7 @@
         checkboxContainer1st.appendChild(checkboxNationResumeContainer);
         checkboxContainer1st.appendChild(tagNowButton);
 
-        checkboxContainer2nd.appendChild(checkboxRepeatContainer);
+        //checkboxContainer2nd.appendChild(checkboxRepeatContainer);
         checkboxContainer2nd.appendChild(checkboxRandomContainer);
         checkboxContainer2nd.appendChild(inputNumberContainer);
         checkboxContainer2nd.appendChild(nextQuestionButton);
@@ -718,7 +770,7 @@
         buttonContainer.style.marginTop = '20px';
 
         // Crear botón de envío
-        startButton = buttonTemplate(START_TEXT, 'rgb(18, 140, 126)', async () => {
+        startButton = checkboxWithLabelAndButtonTemplate(CHECKBOX_START_TEXT, START_TEXT, COLOR_UI_START_BUTTON, async () => {
             // Acción al hacer clic
             runningFlag = true;
             const questionsText = textAreaQuestions.value.trim(); // obtiene el texto del campo de preguntas
@@ -783,7 +835,7 @@
 
                     const cBoxRandomSort = checkboxRandomContainer.querySelector('input[type="checkbox"]');
                     cBoxRandomSort.disabled = false; // no se puede activar o desactivar una vez iniciado
-
+                    
                     // Si el checkbox no está seleccionado, limpiamos los textArea
                     if (!checkboxRepeatContainer.querySelector('input').checked) {
                         textAreaQuestions.value = '';
@@ -806,9 +858,12 @@
         });
 
         // Crear botón de cancelación
-        cancelButton = buttonTemplate(CLOSE_TEXT, 'rgb(244, 67, 54)', () => {
+        cancelButton = checkboxWithLabelAndButtonTemplate(CHECKBOX_CLOSE_TEXT, CLOSE_TEXT, COLOR_UI_CANCEL_BUTTON, () => {
             runningFlag = false; // Variable de clase que avisa de la cancelación del script
-            sendMessage(CANCEL_MESSAGE_TEXT, 0);
+            // Obtener el checkbox dentro del componente
+            if (cancelButton.querySelector('input[type="checkbox"]').checked) {
+                sendMessage(CANCEL_MESSAGE_TEXT, 0);
+            }            
             triviaDialog.remove(); // Cerrar el diálogo al hacer clic en "Cancelar"
         });
 
@@ -841,6 +896,8 @@
         checkboxBoldContainer.querySelector('input[type="checkbox"]').click();
         checkboxItalicContainer.querySelector('input[type="checkbox"]').click();
         checkboxUppercaseContainer.querySelector('input[type="checkbox"]').click();
+        cancelButton.querySelector('input[type="checkbox"]').click();
+        startButton.querySelector('input[type="checkbox"]').click();
 
         const cBoxMention = checkboxMentionContainer.querySelector('input[type="checkbox"]');
         cBoxMention.addEventListener('click', () => {
@@ -1164,7 +1221,7 @@
             }
         } catch (error) {
             console.error('Error extracting group users:', error.message);
-            showToast(`Error extracting group users: ${error.message}`, 4000);
+            //showToast(`Error extracting group users: ${error.message}`, 4000);
             // Terminar el método prematuramente si falla
             return;
         }
@@ -1241,7 +1298,7 @@
 
         if (groupUsers.length === 1) {
             console.error('No users found in the group chat.');
-            showToast("No users found in the group chat.", 4000);
+            showToast(NO_USERS_IN_CHAT_GROUP_TEXT, 4000);
         }
 
         // Remove last user (the user itself)
@@ -1279,8 +1336,8 @@
         toast.style.bottom = '20px';
         toast.style.left = '50%';
         toast.style.transform = 'translateX(-50%)';
-        toast.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-        toast.style.color = 'white';
+        toast.style.backgroundColor = COLOR_UI_TOAST;
+        toast.style.color = COLOR_UI_TEXT;
         toast.style.padding = '10px 20px';
         toast.style.borderRadius = '5px';
         toast.style.fontSize = '16px';
