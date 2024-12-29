@@ -6,9 +6,10 @@ Este script permite jugar a un juego de trivia en un grupo de WhatsApp.
 
 1. Instalar Tampermonkey desde el [sitio web oficial](https://www.tampermonkey.net/) (si aún no lo has instalado).
 2. Agregue el script a Tampermonkey haciendo [clic aquí](https://raw.githubusercontent.com/GiovJ-97/Whatsapp-trivia-script/main/src/main.user.js).
-3. Vaya a [Whatsapp Web](https://web.whatsapp.com/).
-4. Abrir un chat de grupo.
-5. Haga clic en el botón `Trivia`:
+3. Habilite el “Modo desarrollador” en su navegador si es necesario.
+4. Vaya a [Whatsapp Web](https://web.whatsapp.com/).
+5. Abrir un chat de grupo.
+6. Haga clic en el botón `Trivia`:
 
 ![Trivia game for WhatsApp group](misc/button.png)
 
