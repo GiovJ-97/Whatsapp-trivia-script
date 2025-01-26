@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Trivia game for WhatsApp group
 // @namespace    http://tampermonkey.net/
-// @version      1.12.1
+// @version      1.12.2
 // @description  Allow to play trivia with people in Whatsapp group
 // @author       GiovJ-97
 // @license      AGPL-3.0
@@ -22,7 +22,7 @@
     let COLOR_UI_TEXT = 'rgb(233, 237, 239)'; // color del texto
     let COLOR_UI_COMMON_BUTTON = 'rgb(100, 149, 237)'; // color del botón común
     let COLOR_UI_START_BUTTON = 'rgb(18, 140, 126)'; // color del botón de inicio
-    let COLOR_UI_CANCEL_BUTTON = 'rgb(244, 67, 54)'; // color del botón de inicio
+    let COLOR_UI_CANCEL_BUTTON = 'rgb(244, 67, 54)'; // color del botón de cancelar
     let COLOR_UI_TOAST = 'rgba(0, 0, 0, 0.8)'; // color del mensaje emergente
 
     // texto por defecto === inglés
@@ -81,7 +81,8 @@
     // elementos traducibles
     let openUiButton, uiTitle, textAreaQuestions, textAreaAnswers, checkboxMentionContainer, checkboxRepeatContainer, checkboxEnumerateContainer, checkboxBoldContainer, checkboxItalicContainer, checkboxUppercaseContainer, checkboxNationSortContainer, checkboxNationResumeContainer, checkboxRandomContainer, inputNumberContainer, tagNowButton, nextQuestionButton, cancelButton, startButton;
 
-    let triviaDialog;
+    let mainDialogUI;
+    let isUIOpened = false;
 
     function setLang(lang = 'EN') {
         if (lang === 'EN') {
@@ -247,7 +248,7 @@
 
         while (isTyping) {
             await wait(500);
-            console.log("Esperando finalización de postCongrats para enviar otra pregunta");
+            console.log("Esperando finalización de postResponseReceived para enviar otra pregunta");
         } // medida anti superposición de envío de pregunta
 
         // Define si etiquetar o no
@@ -376,7 +377,7 @@
             return;
         }
 
-        const existingButton = container.querySelector('#activatorButton');
+        const existingButton = container.querySelector('#tActivatorButton');
         if (existingButton) {
             console.log('El botón ya existe, no es necesario recrearlo.');
             return;
@@ -384,7 +385,7 @@
 
         openUiButton = document.createElement('button');
         // Asignamos un ID único al botón
-        openUiButton.id = 'activatorButton';
+        openUiButton.id = 'tActivatorButton';
         openUiButton.textContent = OPEN_UI_BUTTON_TEXT;
         openUiButton.style.marginLeft = '5px';
         openUiButton.style.padding = '5px 10px';
@@ -397,37 +398,41 @@
         openUiButton.title = 'Prog';
 
         openUiButton.addEventListener('click', async () => {
-            openTextEditorDialog();
+            if (!isUIOpened) {
+                openTextEditorDialog();
+            }
         });
 
         container.appendChild(openUiButton);
     }
 
     function openTextEditorDialog() {
+        isUIOpened = true;
+
         // Crear el cuadro de diálogo
-        triviaDialog = document.createElement('div');
-        triviaDialog.style.position = 'fixed';
-        triviaDialog.style.top = '28%';
-        triviaDialog.style.left = '50%';
-        triviaDialog.style.transform = 'translate(-50%, -50%)';
-        triviaDialog.style.width = '80%';
-        triviaDialog.style.maxWidth = '550px';
-        triviaDialog.style.backgroundColor = COLOR_UI_BACKGROUND; // oscuro
-        triviaDialog.style.border = '2px solid #ccc';
-        triviaDialog.style.borderColor = COLOR_UI_BORDER;
-        triviaDialog.style.borderRadius = '5px';
-        triviaDialog.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.1)';
-        triviaDialog.style.padding = '20px';
-        triviaDialog.style.zIndex = '1000';
+        mainDialogUI = document.createElement('div');
+        mainDialogUI.style.position = 'fixed';
+        mainDialogUI.style.top = '28%';
+        mainDialogUI.style.left = '50%';
+        mainDialogUI.style.transform = 'translate(-50%, -50%)';
+        mainDialogUI.style.width = '80%';
+        mainDialogUI.style.maxWidth = '550px';
+        mainDialogUI.style.backgroundColor = COLOR_UI_BACKGROUND; // oscuro
+        mainDialogUI.style.border = '2px solid #ccc';
+        mainDialogUI.style.borderColor = COLOR_UI_BORDER;
+        mainDialogUI.style.borderRadius = '5px';
+        mainDialogUI.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.1)';
+        mainDialogUI.style.padding = '20px';
+        mainDialogUI.style.zIndex = '1000';
         // Centrar el texto en el contenedor
-        triviaDialog.style.textAlign = 'center';
+        mainDialogUI.style.textAlign = 'center';
 
         // Crear el título
         uiTitle = document.createElement('h2');
         uiTitle.textContent = TITLE_BUTTON_TEXT;
         uiTitle.style.color = COLOR_UI_TEXT;
         uiTitle.style.marginBottom = '20px';
-        triviaDialog.appendChild(uiTitle);
+        mainDialogUI.appendChild(uiTitle);
 
         // Crear un contenedor para los TextArea
         const textContainer = document.createElement('div');
@@ -492,7 +497,7 @@
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.style.marginRight = '5px';
-                // if (!state) checkbox.disabled = true;            
+                // if (!state) checkbox.disabled = true;
 
                 checkboxLabel.addEventListener('click', () => {
                     checkbox.click();
@@ -501,7 +506,7 @@
                 container.appendChild(checkbox);
                 container.appendChild(checkboxLabel);
             }
-            
+
             const button = document.createElement('button');
             button.className = 'button';
             button.textContent = buttonText;
@@ -518,16 +523,16 @@
             button.style.whiteSpace = 'nowrap'; // Evitar múltiples líneas
             button.style.overflow = 'hidden'; // Evitar desbordamiento del texto
             button.style.textOverflow = 'ellipsis'; // Mostrar "..." si el texto es demasiado largo
-        
+
             // Opciones adicionales
             if (options.disabled) {
                 button.disabled = true;
             }
-        
+
             if (options.width) {
                 button.style.width = options.width;
             }
-        
+
             // Añadir evento de clic, manejando funciones sync y async
             button.addEventListener('click', async (event) => {
                 try {
@@ -541,10 +546,10 @@
             });
 
             container.appendChild(button);
-        
+
             return container;
         };
-        
+
         // plantilla de checkbox con etiqueta de descripción
         const checkboxWithLabelTemplate = (labelText, state) => {
             const container = document.createElement('div');
@@ -739,7 +744,7 @@
             }
             if (boolean === true) runningFlag = false;
         });
-        
+
         nextQuestionButton = checkboxWithLabelAndButtonTemplate('', NEXT_QUESTION_TEXT, COLOR_UI_COMMON_BUTTON, async () => {
             const value = inputNumberContainer.querySelector('input[type="number"]').value.trim();
             inputNumberContainer.querySelector('input[type="number"]').value = '0';
@@ -797,7 +802,7 @@
                     return;
                 }
 
-                triviaDialog.style.opacity = '0.65'; // semitransparente al iniciar
+                mainDialogUI.style.opacity = '0.65'; // semitransparente al iniciar
 
                 while (true) {
                     for (const question of questionList) {
@@ -831,11 +836,11 @@
                     if (runningFlag) await postScore(true);
                     intelligentPeople = {}; // limpiando registro de ganadores al terminar.
 
-                    triviaDialog.style.opacity = '1.0'; // totalmente visible al terminar
+                    mainDialogUI.style.opacity = '1.0'; // totalmente visible al terminar
 
                     const cBoxRandomSort = checkboxRandomContainer.querySelector('input[type="checkbox"]');
                     cBoxRandomSort.disabled = false; // no se puede activar o desactivar una vez iniciado
-                    
+
                     // Si el checkbox no está seleccionado, limpiamos los textArea
                     if (!checkboxRepeatContainer.querySelector('input').checked) {
                         textAreaQuestions.value = '';
@@ -863,8 +868,9 @@
             // Obtener el checkbox dentro del componente
             if (cancelButton.querySelector('input[type="checkbox"]').checked) {
                 sendMessage(CANCEL_MESSAGE_TEXT, 0);
-            }            
-            triviaDialog.remove(); // Cerrar el diálogo al hacer clic en "Cancelar"
+            }
+            mainDialogUI.remove(); // Cerrar el diálogo al hacer clic en "Cancelar"
+            isUIOpened = false;
         });
 
         // Ejemplo de uso
@@ -881,15 +887,15 @@
         buttonContainer.appendChild(startButton);
 
         // Añadir elementos al diálogo
-        triviaDialog.appendChild(uiTitle);
-        triviaDialog.appendChild(textContainer);
-        triviaDialog.appendChild(checkboxContainer1st);
-        triviaDialog.appendChild(checkboxContainer2nd);
-        triviaDialog.appendChild(checkboxContainer3rd);
-        triviaDialog.appendChild(buttonContainer);
+        mainDialogUI.appendChild(uiTitle);
+        mainDialogUI.appendChild(textContainer);
+        mainDialogUI.appendChild(checkboxContainer1st);
+        mainDialogUI.appendChild(checkboxContainer2nd);
+        mainDialogUI.appendChild(checkboxContainer3rd);
+        mainDialogUI.appendChild(buttonContainer);
 
         // Añadir el diálogo al cuerpo del documento
-        document.body.appendChild(triviaDialog);
+        document.body.appendChild(mainDialogUI);
 
         // Establecer valores predeterminados para los checkboxes
         checkboxEnumerateContainer.querySelector('input[type="checkbox"]').click();
@@ -1035,6 +1041,7 @@
                     // Add '\u200B' character 4000 times to emulate a spoiler behavior
                     const zeroWidthSpace = '\u200B'.repeat(1000) // 4000
                     insertText(zeroWidthSpace);
+                    insertNewLineAtTextArea(chatInput); // insertar nueva linea en el cuadro de escritura
                     insertText(`${formatText(MENTION_HEADER_TEXT)}`);
                     insertNewLineAtTextArea(chatInput); // insertar nueva linea en el cuadro de escritura
                     insertNewLineAtTextArea(chatInput); // insertar nueva linea en el cuadro de escritura
@@ -1181,26 +1188,17 @@
                 }
 
                 // Medidas contra números
-                if (user.startsWith("+58 424-") || user.startsWith("+44")) { // si comienza con "+53"
-                    user = user.slice(0, -1); // recortar el carácter final
-                }
+                //if (user.startsWith("+58 424-") || user.startsWith("+44")) user = user.slice(0, -1); // recortar el carácter final
 
                 // prefijo para numeración
                 const number = i + 1
                 const formattedNumber = number.toString().padStart(3, '0');
-                insertText(`${formattedNumber}.- @${normalizeText(user)}`);
-                //document.execCommand('insertText', false, `${formattedNumber}.- @`);
-
-                //document.execCommand('insertText', false, normalizeText(user))
+                insertText(`${formattedNumber}.- @${cutTelephoneForMention(normalizeText(user))}`);
 
                 await sleep(50).executeAsync();
 
-                // Send "tab" key to autocomplete the user
-                //const pressedTab = new KeyboardEvent('keydown', { key: 'Tab', code: 'Tab', keyCode: 9, which: 9, bubbles: true, cancelable: true, view: window })
-                //chatInput.dispatchEvent(pressedTab)
                 pressTabKey(chatInput);
 
-                //typeShiftEnter(chatInput);
                 insertNewLineAtTextArea(chatInput);
 
                 i++
@@ -1304,11 +1302,8 @@
         // Remove last user (the user itself)
         groupUsers.pop()
 
-        // Elimina caracteres de cada nombre de usuario
-        //groupUsers = groupUsers.map(user => user.slice(0, -1));
-
         // Limita cada nombre de usuario a un máximo de 12 caracteres
-        groupUsers = groupUsers.map(user => user.length > 12 ? user.slice(0, -1) : user);
+        //groupUsers = groupUsers.map(user => user.length > 12 ? user.slice(0, -1) : user);
 
         // Ordena la lista de manera alfabética (numérica creciente en este caso)
         groupUsers.sort();
@@ -1417,8 +1412,8 @@
                 const phoneNumberForMention = cutTelephoneForMention(userPhoneNumber);
 
                 try {
-                    postCongrats(answerFlag, phoneNumberForMention, userAnswer, question); // Mensaje de respuesta detectada
-                    console.log("postCongrats terminado");
+                    postResponseReceived(answerFlag, phoneNumberForMention, userAnswer, question); // Mensaje de respuesta detectada
+                    console.log("postResponseReceived terminado");
                 } catch (error) {
                     console.error("postCongrats fallido:", error);
                 }
@@ -1577,10 +1572,10 @@
         return items;
     } // completo
 
-    async function postCongrats(correctAnswer, name, message, question) {
-        console.log(`iniciando postCongrats para respuesta: ${correctAnswer}`);
+    async function postResponseReceived(correctAnswer, name, message, question) {
+        console.log(`iniciando postResponseReceived para respuesta: ${correctAnswer}`);
         if (isTyping) {
-            console.log("postCongrats segunda llamada detectada");
+            console.log("postResponseReceived segunda llamada detectada");
             return null;
         }
         isTyping = true;
@@ -1763,21 +1758,15 @@
             }
         } else if (userNumber.startsWith("+54") && !userNumber.startsWith("+54_")) {
             userNumber = userNumber.substring(0, 16)
-        } else if (userNumber.startsWith("+51") || userNumber.startsWith("+58 412") || userNumber.startsWith("+44")) { // Lunita
+        } else if (userNumber.startsWith("+51") || userNumber.startsWith("+58 412")) { 
             userNumber = userNumber.substring(0, 13)
-        } else if (userNumber.startsWith("+55")) {
+        } else if (userNumber.startsWith("+55") || userNumber.startsWith("+593") || userNumber.startsWith("+58 424-") || userNumber.startsWith("+58 424-")) {
             userNumber = userNumber.substring(0, 14)
-        } else if (userNumber.startsWith("+593")) {
-            userNumber = userNumber.substring(0, 14)
-        } else if (userNumber.startsWith("+503")) {
-            userNumber = userNumber.substring(0, 12)
         } else if (userNumber.startsWith("+1 ") || userNumber.startsWith("+237") || userNumber.startsWith("+52 9") || userNumber.startsWith("+52 33")) { // Estados Unidos y Canadá (+1)
             userNumber = userNumber.substring(0, 15)
-        } else if (userNumber.startsWith("+598")) {
+        } else if (userNumber.startsWith("+598") || userNumber.startsWith("+44")) {
             userNumber = userNumber.substring(0, 13)
-        } else if (userNumber.startsWith("+507")) {
-            userNumber = userNumber.substring(0, 12)
-        } else if (userNumber.startsWith("+595")) {
+        } else if (userNumber.startsWith("+507") || userNumber.startsWith("+595") || userNumber.startsWith("+503")) {
             userNumber = userNumber.substring(0, 12)
         } else {
             //(user.startsWith("+58 424-") || user.startsWith("+58 426-") || user.startsWith("+44") || user.startsWith("+57 313"))
