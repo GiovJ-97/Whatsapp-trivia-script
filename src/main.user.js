@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Trivia game for WhatsApp group
 // @namespace    http://tampermonkey.net/
-// @version      1.12.2
+// @version      1.13.1
 // @description  Allow to play trivia with people in Whatsapp group
 // @author       GiovJ-97
 // @license      AGPL-3.0
@@ -41,6 +41,7 @@
     let CHECKBOX_ITALIC_TEXT = '';
     let CHECKBOX_UPPERCASE_TEXT = '';
     let ANSWERS_NEEDED_TEXT = 'default';
+    let ANSWER_PREFFIX_HINT = 'default';
     let CLOSE_TEXT = '';
     let START_TEXT = '';
     let CHECKBOX_CLOSE_TEXT = 'default';
@@ -67,6 +68,9 @@
     let CONGRATS_END_TEXT_2 = ``;
     let CONGRATULATIONS = ["", "", "", "", ""];
     let NO_USERS_IN_CHAT_GROUP_TEXT = "default";
+    let TUTORIAL_WARN = '';
+    let TUTORIAL_BUTTON_TEXT = '';
+    let TUTORIAL_TEXT = '';
 
     let isTyping = false;
     let answerFlag = false;
@@ -79,12 +83,15 @@
     let runningFlag = false;
 
     // elementos traducibles
-    let openUiButton, uiTitle, textAreaQuestions, textAreaAnswers, checkboxMentionContainer, checkboxRepeatContainer, checkboxEnumerateContainer, checkboxBoldContainer, checkboxItalicContainer, checkboxUppercaseContainer, checkboxNationSortContainer, checkboxNationResumeContainer, checkboxRandomContainer, inputNumberContainer, tagNowButton, nextQuestionButton, cancelButton, startButton;
+    let openUiButton, uiTitle, textAreaQuestions, textAreaAnswers, checkboxMentionContainer, checkboxRepeatContainer, checkboxEnumerateContainer, checkboxBoldContainer, checkboxItalicContainer, checkboxUppercaseContainer, checkboxNationSortContainer, checkboxNationResumeContainer, checkboxRandomContainer, inputPointsContainer, inputAnswerPreffix, tagNowButton, nextQuestionButton, cancelButton, startButton, sendTutorialButton;
 
-    let mainDialogUI;
+    let mainUIDialog;
+    let responseSymbol = "$";
     let isUIOpened = false;
 
     function setLang(lang = 'EN') {
+        responseSymbol = inputAnswerPreffix.querySelector('input[type="text"]').value; // recuperación del prefijo de respuesta
+
         if (lang === 'EN') {
             OPEN_UI_BUTTON_TEXT = 'Trivia'; // texto del botón
             TITLE_BUTTON_TEXT = 'Trivia for WhatsApp'; // texto del título
@@ -100,6 +107,7 @@
             CHECKBOX_ITALIC_TEXT = 'Italic';
             CHECKBOX_UPPERCASE_TEXT = 'Uppercase';
             ANSWERS_NEEDED_TEXT = 'Correct answers';
+            ANSWER_PREFFIX_HINT = 'Answer preffix'
             CLOSE_TEXT = 'Close';
             START_TEXT = 'Start game';
             CHECKBOX_CLOSE_TEXT = 'Exit confirmation';
@@ -126,6 +134,10 @@
             CONGRATS_END_TEXT_2 = `¡${pointNumber}rd place!`;
             CONGRATULATIONS = ["excellent!", "great!", "amazing!", "incredible!", "fantastic!"];
             NO_USERS_IN_CHAT_GROUP_TEXT = "No users found in the group chat.";
+
+            TUTORIAL_WARN = "Please enter a valid response prefix"
+            TUTORIAL_BUTTON_TEXT = 'Send tutorial';
+            TUTORIAL_TEXT = `*Welcome to the game of ${OPEN_UI_BUTTON_TEXT}.* \n\nThis is a word game where you must prefix your answer with "${responseSymbol}" (without quotes).\n\nExample:\nIf you want to answer "The French Revolution", you should write it like this:\n"${responseSymbol}The French Revolution" (without quotes).\n\nThe game is case insensitive and does not require accents.\n\nHave fun playing!`;
         } else if (lang === 'ES') {
             // español
             OPEN_UI_BUTTON_TEXT = 'Trivia'; // texto del botón
@@ -142,6 +154,7 @@
             CHECKBOX_ITALIC_TEXT = 'Cursiva';
             CHECKBOX_UPPERCASE_TEXT = 'Mayúscula';
             ANSWERS_NEEDED_TEXT = 'Respuestas correctas';
+            ANSWER_PREFFIX_HINT = 'Prefijo de respuesta'
             CLOSE_TEXT = 'Cerrar';
             START_TEXT = 'Iniciar juego';
             CHECKBOX_CLOSE_TEXT = 'Confirmación al salir';
@@ -154,20 +167,24 @@
             WARN_TEXTFIELD_EMPTY = 'Parece que alguno de los campos de texto aún está vacío. Añada el texto correspondiente.'
             WARN_TEXTFIELD_CONTENT_DONT_MATCH = `La cantidad de preguntas (${questionNumber}) y respuestas (${answerNumber}) no concuerda. Por favor, verifíquelo.`
             CANCEL_MESSAGE_TEXT = 'Juego de trivia terminado por el anfitrión/a.';
-            COUNTDOWN_TEXT_0 = `Iniciando juego de trivia…`;
+            COUNTDOWN_TEXT_0 = `Iniciando juego de trivia`;
             COUNTDOWN_TEXT_1 = `Iniciando en ${countdownNumber}…`;
             COUNTDOWN_TEXT_2 = `¡Aquí vamos!`;
             RESPONSE_CONFIRMATION_TEXT = `☑ *_respuesta detectada_* ☑`;
             RESPONSE_MENTION_TEXT = `_*respuesta:*_ "${ANSWER}". _*jugador:*_ @${PLAYER_NUMBER}`;
             CONGRATS_HEADER_TEXT_0 = 'Marcador actual:';
             CONGRATS_HEADER_TEXT_1 = 'Marcador final:';
-            ENDED_TEXT = 'Finalizando juego de trivia… ¡Buen trabajo a todos!'
+            ENDED_TEXT = 'Finalizando juego de trivia ¡Buen trabajo a todos!'
             PLAYER_SCORE_TEXT = `*${pointNumber}* puntos ➨ @${PLAYER_NUMBER}`;
             CONGRATS_END_TEXT_0 = `¡${pointNumber}er lugar!`;
             CONGRATS_END_TEXT_1 = `¡${pointNumber}do lugar!`;
             CONGRATS_END_TEXT_2 = `¡${pointNumber}er lugar!`;
             CONGRATULATIONS = ["¡excelente!", "¡genial!", "¡asombroso!", "¡increíble!", "¡fantástico!"];
             NO_USERS_IN_CHAT_GROUP_TEXT = "No se encontraron usuarios en el chat grupal";
+
+            TUTORIAL_WARN = "Por favor ingrese un prefijo de respuesta válido"
+            TUTORIAL_BUTTON_TEXT = 'Enviar tutorial';
+            TUTORIAL_TEXT = `*Bienvenido al juego de ${OPEN_UI_BUTTON_TEXT}.* \n\nEste es un juego de palabras en el que debes anteponer "${responseSymbol}" (sin comillas) a tu respuesta.\n\nEjemplo:\nSi deseas responder "La Revolución Francesa", debes escribirlo así:\n"${responseSymbol}La Revolución Francesa" (sin comillas).\n\nEl juego es indistinto de mayúscula o minúscula y acentos.\n\n¡Diviértete jugando!`;
         }
 
         // se actualiza el texto el texto en los componentes
@@ -185,13 +202,15 @@
         checkboxBoldContainer.querySelector('.checkbox-label').textContent = CHECKBOX_BOLD_TEXT;
         checkboxItalicContainer.querySelector('.checkbox-label').textContent = CHECKBOX_ITALIC_TEXT;
         checkboxUppercaseContainer.querySelector('.checkbox-label').textContent = CHECKBOX_UPPERCASE_TEXT;
-        if (inputNumberContainer.querySelector('.inputNumber-slabel') !== null) inputNumberContainer.querySelector('.inputNumber-slabel').textContent = ANSWERS_NEEDED_TEXT;
+        if (inputPointsContainer.querySelector('.inputNumber-slabel') !== null) inputPointsContainer.querySelector('.inputNumber-slabel').textContent = ANSWERS_NEEDED_TEXT;
+        if (inputAnswerPreffix.querySelector('.inputNumber-slabel') !== null) inputAnswerPreffix.querySelector('.inputNumber-slabel').textContent = ANSWER_PREFFIX_HINT;
 
         tagNowButton.querySelector('.button').textContent = TAG_NOW_TEXT;
         nextQuestionButton.querySelector('.button').textContent = NEXT_QUESTION_TEXT;
+        sendTutorialButton.querySelector('.button').textContent = TUTORIAL_BUTTON_TEXT;
 
         cancelButton.querySelector('.checkbox-label').textContent = CHECKBOX_CLOSE_TEXT;
-        startButton.querySelector('.checkbox-label').textContent = CHECKBOX_START_TEXT;     
+        startButton.querySelector('.checkbox-label').textContent = CHECKBOX_START_TEXT;
         cancelButton.querySelector('.button').textContent = CLOSE_TEXT;
         startButton.querySelector('.button').textContent = START_TEXT;
 
@@ -275,8 +294,8 @@
 
         // si el checkbox no está activo, ir limpiando los textarea de pregunta/respuesta
         if (!checkboxRepeatContainer.querySelector('input').checked) {
-            refreshTextArea(textFieldQuestions, question);
-            refreshTextArea(textFieldAnswers, answer); // TODO
+            removeLineFromTextArea(textFieldQuestions, question);
+            removeLineFromTextArea(textFieldAnswers, answer); // TODO
         }
 
         await wait(50); // Esperar a que el mensaje se envíe
@@ -399,40 +418,44 @@
 
         openUiButton.addEventListener('click', async () => {
             if (!isUIOpened) {
-                openTextEditorDialog();
+                openMainDialog();
             }
         });
 
         container.appendChild(openUiButton);
     }
 
-    function openTextEditorDialog() {
+    function openMainDialog() {
         isUIOpened = true;
 
         // Crear el cuadro de diálogo
-        mainDialogUI = document.createElement('div');
-        mainDialogUI.style.position = 'fixed';
-        mainDialogUI.style.top = '28%';
-        mainDialogUI.style.left = '50%';
-        mainDialogUI.style.transform = 'translate(-50%, -50%)';
-        mainDialogUI.style.width = '80%';
-        mainDialogUI.style.maxWidth = '550px';
-        mainDialogUI.style.backgroundColor = COLOR_UI_BACKGROUND; // oscuro
-        mainDialogUI.style.border = '2px solid #ccc';
-        mainDialogUI.style.borderColor = COLOR_UI_BORDER;
-        mainDialogUI.style.borderRadius = '5px';
-        mainDialogUI.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.1)';
-        mainDialogUI.style.padding = '20px';
-        mainDialogUI.style.zIndex = '1000';
-        // Centrar el texto en el contenedor
-        mainDialogUI.style.textAlign = 'center';
+        mainUIDialog = document.createElement('div');
+        mainUIDialog.style.position = 'absolute';
+        // Calcular y establecer explícitamente los valores de top y left
+        const dialogWidth = 550; // Ancho máximo del diálogo
+        const dialogHeight = 300; // Altura aproximada del diálogo (ajusta según sea necesario)
+        const centerX = window.innerWidth / 2 - dialogWidth / 2; // Calcular la posición centrada en la ventana
+        const centerY = window.innerHeight / 2 - (dialogHeight / 2) - 200;
+        mainUIDialog.style.top = `${centerY}px`; // Establecer los valores explícitos de top y left
+        mainUIDialog.style.left = `${centerX}px`;
+        mainUIDialog.style.width = '80%'; // Estilo adicional
+        mainUIDialog.style.maxWidth = `${dialogWidth}px`;
+        mainUIDialog.style.height = 'auto'; // Ajusta automáticamente la altura
+        mainUIDialog.style.backgroundColor = COLOR_UI_BACKGROUND; // COLOR_UI_BACKGROUND oscuro
+        mainUIDialog.style.border = '2px solid #ccc';
+        mainUIDialog.style.borderColor = COLOR_UI_BORDER; // COLOR_UI_BORDER
+        mainUIDialog.style.borderRadius = '5px';
+        mainUIDialog.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.1)';
+        mainUIDialog.style.padding = '20px';
+        mainUIDialog.style.zIndex = '1000';
+        mainUIDialog.style.textAlign = 'center';
 
         // Crear el título
         uiTitle = document.createElement('h2');
         uiTitle.textContent = TITLE_BUTTON_TEXT;
         uiTitle.style.color = COLOR_UI_TEXT;
         uiTitle.style.marginBottom = '20px';
-        mainDialogUI.appendChild(uiTitle);
+        mainUIDialog.appendChild(uiTitle);
 
         // Crear un contenedor para los TextArea
         const textContainer = document.createElement('div');
@@ -517,7 +540,7 @@
             button.style.borderRadius = '5px';
             button.style.cursor = 'pointer';
             button.style.padding = '10px';
-            button.style.fontSize = FONT_SIZE_VALUE; 
+            button.style.fontSize = FONT_SIZE_VALUE;
             button.style.width = 'auto';
             button.style.height = 'auto';
             button.style.whiteSpace = 'nowrap'; // Evitar múltiples líneas
@@ -580,7 +603,7 @@
             return container;
         };
 
-        const inputNumberWithLabelTemplate = (labelText1 = '', labelText2 = '') => {
+        const inputNumberWithLabelTemplate = (labelText1 = '', labelText2 = '', defaultValue, type, keyboard = false) => {
             const container = document.createElement('div');
             container.style.display = 'flex';
             container.style.alignItems = 'center';
@@ -599,20 +622,37 @@
 
             // Crear campo numérico para los segundos
             const inputNumber = document.createElement('input');
-            inputNumber.type = 'number';
+            inputNumber.type = type;
             inputNumber.min = '0';
-            inputNumber.style.width = '16%';
-            inputNumber.style.backgroundColor = COLOR_UI_BORDER; // claro
+            inputNumber.value = defaultValue; // Tres puntos predeterminados
+            inputNumber.maxlength = '3'
+            // Estilo del campo
+            inputNumber.style.width = '40px'; // Ancho fijo
+            inputNumber.style.height = '24px'; // Altura total
+            inputNumber.style.lineHeight = '24px'; // Alineación vertical
+            inputNumber.style.fontSize = FONT_SIZE_VALUE; // Tamaño de fuente
+            inputNumber.style.padding = '2px'; // Relleno interno
+            inputNumber.style.boxSizing = 'border-box'; // Incluir relleno y borde en el ancho
+            inputNumber.style.border = '1px solid #ccc'; // Borde claro
+            inputNumber.style.color = COLOR_UI_TEXT; // Color del texto
+            inputNumber.style.backgroundColor = COLOR_UI_BORDER; // Color de fondo
             inputNumber.style.borderColor = COLOR_UI_BORDER; // claro
-            inputNumber.style.color = COLOR_UI_TEXT;
-            inputNumber.value = '3'; // tres segundos predeterminados de espera entre mensajes
-            inputNumber.style.display = 'flex';
-            inputNumber.style.fontSize = FONT_SIZE_VALUE;
+            inputNumber.style.display = 'inline-block'; // Evitar flex
 
-            // Bloquear entrada manual
-            inputNumber.addEventListener('keydown', (event) => {
-                event.preventDefault(); // Bloquea cualquier entrada desde el teclado
+            // Función interna para limitar el número de caracteres
+            const maxLength = 2; // Máximo de 3 caracteres
+            inputNumber.addEventListener('input', () => {
+                if (inputNumber.value.length > maxLength) {
+                    inputNumber.value = inputNumber.value.slice(0, maxLength); // Elimina el último carácter si excede el límite
+                }
             });
+
+            if (!keyboard) {
+                // Bloquear entrada manual
+                inputNumber.addEventListener('keydown', (event) => {
+                    event.preventDefault(); // Bloquea cualquier entrada desde el teclado
+                });
+            }
 
             container.appendChild(inputNumber);
 
@@ -625,7 +665,6 @@
                 label2.style.marginLeft = '10px';
                 label2.style.fontSize = FONT_SIZE_VALUE;
                 container.appendChild(label2);
-
             }
 
             return container;
@@ -727,7 +766,8 @@
         checkboxBoldContainer = checkboxWithLabelTemplate(CHECKBOX_BOLD_TEXT, true);
         checkboxItalicContainer = checkboxWithLabelTemplate(CHECKBOX_ITALIC_TEXT, true);
         checkboxUppercaseContainer = checkboxWithLabelTemplate(CHECKBOX_UPPERCASE_TEXT, true);
-        inputNumberContainer = inputNumberWithLabelTemplate('', ANSWERS_NEEDED_TEXT);
+        inputPointsContainer = inputNumberWithLabelTemplate('', ANSWERS_NEEDED_TEXT, '3', 'number', false);
+        inputAnswerPreffix = inputNumberWithLabelTemplate('', ANSWER_PREFFIX_HINT, '# ', 'text', true);
 
         tagNowButton = checkboxWithLabelAndButtonTemplate('', TAG_NOW_TEXT, COLOR_UI_COMMON_BUTTON, async () => {
             let boolean = false;
@@ -746,10 +786,17 @@
         });
 
         nextQuestionButton = checkboxWithLabelAndButtonTemplate('', NEXT_QUESTION_TEXT, COLOR_UI_COMMON_BUTTON, async () => {
-            const value = inputNumberContainer.querySelector('input[type="number"]').value.trim();
-            inputNumberContainer.querySelector('input[type="number"]').value = '0';
+            const value = inputPointsContainer.querySelector('input[type="number"]').value.trim();
+            inputPointsContainer.querySelector('input[type="number"]').value = '0';
             await wait(300);
-            inputNumberContainer.querySelector('input[type="number"]').value = value;
+            inputPointsContainer.querySelector('input[type="number"]').value = value;
+        });
+
+        sendTutorialButton = checkboxWithLabelAndButtonTemplate('', TUTORIAL_BUTTON_TEXT, COLOR_UI_COMMON_BUTTON, async () => {
+            setLang(currentLangID);
+            if (checkValidAnswerPreffix()) {
+                sendMessage(TUTORIAL_TEXT, 0, false);
+            }
         });
 
         // Añadir checkboxes al contenedor
@@ -760,13 +807,15 @@
 
         //checkboxContainer2nd.appendChild(checkboxRepeatContainer);
         checkboxContainer2nd.appendChild(checkboxRandomContainer);
-        checkboxContainer2nd.appendChild(inputNumberContainer);
+        checkboxContainer2nd.appendChild(inputPointsContainer);
+        checkboxContainer2nd.appendChild(inputAnswerPreffix);
         checkboxContainer2nd.appendChild(nextQuestionButton);
 
         checkboxContainer3rd.appendChild(checkboxEnumerateContainer);
         checkboxContainer3rd.appendChild(checkboxBoldContainer);
         checkboxContainer3rd.appendChild(checkboxItalicContainer);
         checkboxContainer3rd.appendChild(checkboxUppercaseContainer);
+        checkboxContainer3rd.appendChild(sendTutorialButton);
 
         // Contenedor para los botones de aceptar o cancelar
         const buttonContainer = document.createElement('div');
@@ -777,7 +826,8 @@
         // Crear botón de envío
         startButton = checkboxWithLabelAndButtonTemplate(CHECKBOX_START_TEXT, START_TEXT, COLOR_UI_START_BUTTON, async () => {
             // Acción al hacer clic
-            runningFlag = true;
+            if (!checkValidAnswerPreffix()) return;
+
             const questionsText = textAreaQuestions.value.trim(); // obtiene el texto del campo de preguntas
             const answersText = textAreaAnswers.value.trim(); // obtiene el texto del campo de respuestas
 
@@ -802,7 +852,7 @@
                     return;
                 }
 
-                mainDialogUI.style.opacity = '0.65'; // semitransparente al iniciar
+                runningFlag = true;
 
                 while (true) {
                     for (const question of questionList) {
@@ -836,7 +886,7 @@
                     if (runningFlag) await postScore(true);
                     intelligentPeople = {}; // limpiando registro de ganadores al terminar.
 
-                    mainDialogUI.style.opacity = '1.0'; // totalmente visible al terminar
+                    mainUIDialog.style.opacity = '1.0'; // totalmente visible al terminar
 
                     const cBoxRandomSort = checkboxRandomContainer.querySelector('input[type="checkbox"]');
                     cBoxRandomSort.disabled = false; // no se puede activar o desactivar una vez iniciado
@@ -869,7 +919,7 @@
             if (cancelButton.querySelector('input[type="checkbox"]').checked) {
                 sendMessage(CANCEL_MESSAGE_TEXT, 0);
             }
-            mainDialogUI.remove(); // Cerrar el diálogo al hacer clic en "Cancelar"
+            mainUIDialog.remove(); // Cerrar el diálogo al hacer clic en "Cancelar"
             isUIOpened = false;
         });
 
@@ -887,15 +937,15 @@
         buttonContainer.appendChild(startButton);
 
         // Añadir elementos al diálogo
-        mainDialogUI.appendChild(uiTitle);
-        mainDialogUI.appendChild(textContainer);
-        mainDialogUI.appendChild(checkboxContainer1st);
-        mainDialogUI.appendChild(checkboxContainer2nd);
-        mainDialogUI.appendChild(checkboxContainer3rd);
-        mainDialogUI.appendChild(buttonContainer);
+        mainUIDialog.appendChild(uiTitle);
+        mainUIDialog.appendChild(textContainer);
+        mainUIDialog.appendChild(checkboxContainer1st);
+        mainUIDialog.appendChild(checkboxContainer2nd);
+        mainUIDialog.appendChild(checkboxContainer3rd);
+        mainUIDialog.appendChild(buttonContainer);
 
         // Añadir el diálogo al cuerpo del documento
-        document.body.appendChild(mainDialogUI);
+        document.body.appendChild(mainUIDialog);
 
         // Establecer valores predeterminados para los checkboxes
         checkboxEnumerateContainer.querySelector('input[type="checkbox"]').click();
@@ -919,10 +969,12 @@
             }
         });
 
+        makeDraggable(uiTitle, mainUIDialog);
+
         setLang('EN');
     }
 
-    function refreshTextArea(textfield, line) {
+    function removeLineFromTextArea(textfield, line) {
         // Obtén el contenido del textfield
         const text = textfield.value;
 
@@ -1246,12 +1298,16 @@
         clickSendButton() // enviar
     }
 
-    async function sendMessage(text, timeToContinueInMs = 1000) {
+    async function sendMessage(text, timeToContinueInMs = 1000, format = true) {
         console.log(`sendMessage: ${text}, tiempo: ${timeToContinueInMs}`);
+
+        await waitUntilNoOneIsTyping();
+        isTyping = true;
+
         const inputTextArea = getInputTextArea();
         inputTextArea.focus();
 
-        const formattedText = formatText(text); // cuando no se especifica, es 0
+        const formattedText = format ? formatText(text) : text; // cuando no se especifica, es 0
 
         insertText(formattedText);
 
@@ -1259,15 +1315,7 @@
         clickSendButton() // enviar
         await wait(50);
 
-        /*
-        let counter = 0
-        while (counter < (timeToContinueInMs / 300)) {
-            console.log(`Contador: ${counter}, Valor esperado: ${timeToContinueInMs / 300}`);
-            //await wait(300);
-            sleep(300).execute();
-            counter++
-        }*/
-
+        isTyping = false;
     }
 
     function insertNationality(chatInput, booleanTag, nation) {
@@ -1362,13 +1410,32 @@
         return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
     }
 
+    function checkValidAnswerPreffix() {
+        let answerPreffix = inputAnswerPreffix.querySelector('input[type="text"]').value;
+        if (answerPreffix === '' || answerPreffix === ' ' || answerPreffix === '  ' || answerPreffix.startsWith(' ')) {
+            alert(TUTORIAL_WARN);
+            inputAnswerPreffix.querySelector('input[type="text"]').value = "# "
+            return false;
+        } else return true;
+    }
+
+    async function waitUntilNoOneIsTyping() {
+        while (isTyping) {
+            await wait(500);
+            //await sleep(500).executeAsync();
+            console.log("Esperando que isTyping cambie a false.");
+        } // medida anti superposición de envío de pregunta
+        //await sleep(500).executeAsync();
+        await wait(500);
+    }
+
 
 
     /* Solo revisar respuesta */
     async function checkAnswer(question, answer) {
         console.log("Iniciando checkAnswer");
 
-        let correctAnswersNeeded = parseInt(inputNumberContainer.querySelector('input[type="number"]').value.trim(), 10);
+        let correctAnswersNeeded = parseInt(inputPointsContainer.querySelector('input[type="number"]').value.trim(), 10);
         answerFlag = false;
         let points = correctAnswersNeeded + 2; // máxima cantidad de puntos dada al primer lugar
         let thinkers = [];
@@ -1376,7 +1443,7 @@
 
         // Función anidada para manejar la lógica de salida
         async function checkExitCondition() {
-            correctAnswersNeeded = parseInt(inputNumberContainer.querySelector('input[type="number"]').value.trim(), 10);
+            correctAnswersNeeded = parseInt(inputPointsContainer.querySelector('input[type="number"]').value.trim(), 10);
             if (correctAnswersCounter >= correctAnswersNeeded) {
                 while (true) {
                     if (!isTyping) {
@@ -1389,7 +1456,7 @@
                         answerFlag = true;
                         break;
                     }
-                    await wait(300);
+                    await wait(100);
                 }
             }
         }
@@ -1408,169 +1475,100 @@
             await checkExitCondition();
 
             if (lastMessageData !== null) {
-                const [userName, userPhoneNumber, userAnswer, userAnswerTime] = lastMessageData;
-                const phoneNumberForMention = cutTelephoneForMention(userPhoneNumber);
+                const message = lastMessageData.message;
+                const phoneNumber = lastMessageData.phoneNumber;
+                const hour = lastMessageData.hour;
+                const quotedMessage = lastMessageData.quotedMessage;
+                const quotedPhoneNumber = lastMessageData.quotedPhoneNumber;
+                const optionsButton = lastMessageData.optionsButton;
+                const container = lastMessageData.container;
 
-                try {
-                    postResponseReceived(answerFlag, phoneNumberForMention, userAnswer, question); // Mensaje de respuesta detectada
-                    console.log("postResponseReceived terminado");
-                } catch (error) {
-                    console.error("postCongrats fallido:", error);
+                if (message === null || phoneNumber === null) {
+                    console.log(`message o phoneNumber son nulos, valores respectivos "${message}" y "${phoneNumber}". Saltando a siguiente iteración,`)
+                    await wait(100); // para evitar bloqueo
+                    continue; // brincar caso si no hay mensaje o número
                 }
 
-                if (normalizeText(userAnswer).includes(normalizeText(answer))) { // respuesta correcta detectada
-                    if (!thinkers.includes(phoneNumberForMention)) { // evita asignar doble puntaje al mismo usuario
-                        updateOrAdd(phoneNumberForMention, points); // añadir o sumar a dueño de "phone" a personas inteligentes
-                        thinkers.push(phoneNumberForMention);
-                        points--;
-                        correctAnswersCounter++; // Incrementar contador de respuestas correctas
+                responseSymbol = inputAnswerPreffix.querySelector('input[type="text"]').value; // obtención del prefijo de respuesta actualizado
 
-                        // Llamada a la función de lógica de salida
-                        await checkExitCondition();
+                if (message.startsWith(responseSymbol) && message.length > 1) {
+                    const cleanMessage = message.replace(responseSymbol, ""); // Elimina el simbolo inicial
+
+                    const phoneNumberForMention = cutTelephoneForMention(phoneNumber);
+
+                    try {
+                        postResponseReceived(answerFlag, phoneNumberForMention, cleanMessage, question); // Mensaje de respuesta detectada
+                        console.log("postResponseReceived terminado");
+                    } catch (error) {
+                        console.error("postCongrats fallido:", error);
                     }
-                } else { // respuesta equivocada
-                    updateOrAdd(phoneNumberForMention, 1, true);
+
+                    if (normalizeText(cleanMessage).includes(normalizeText(answer))) { // respuesta correcta detectada
+                        if (!thinkers.includes(phoneNumberForMention)) { // evita asignar doble puntaje al mismo usuario
+                            updateOrAdd(phoneNumberForMention, points); // añadir o sumar a dueño de "phone" a personas inteligentes
+                            thinkers.push(phoneNumberForMention);
+                            points--;
+                            correctAnswersCounter++; // Incrementar contador de respuestas correctas
+
+                            // Llamada a la función de lógica de salida
+                            await checkExitCondition();
+                        }
+                    } else { // respuesta equivocada, quitarle puntos
+                        updateOrAdd(phoneNumberForMention, points, true);
+                    }
                 }
             }
 
             // Introducir una pausa para evitar bloqueo
-            await wait(300);
+            await wait(100);
         }
     } // completo (llamar a checkAnswer como primer paso)
 
     function getLastMessageData() {
-        const messageListContainer = document.querySelector('.x3psx0u.xwib8y2.xkhd6sd.xrmvbpv'); // obtención del contenedor de mensajes.
-        console.log('Iniciando getLastMessageData.');
+        const main = document.querySelector("#main");
 
-        if (!messageListContainer) {
-            console.log('messageListContainer no encontrado.');
-            return null;
-        }
-        console.log('messageListContainer encontrado.');
-
-        const messageItems = messageListContainer.children; // obtención de lista de elementos
-
-        if (messageItems === messageListSize) {
-            console.log('messageItems no ha cambiado de tamaño.');
-            return null;
-        }
-        console.log('messageItems ha cambiado de tamaño.');
-
-        messageListSize = messageItems.length; // reasignar el valor de messageListSize con el valor de messageItems
-        if (!(messageItems.length > 0)) {
-            console.log('messageItems está vacío.');
-            return null;
+        if (!main) {
+            throw new Error("No se encontró el elemento principal (#main).");
         }
 
-        const messageItem = messageItems[messageItems.length - 1]; // selección del último elemento de la lista
+        // Seleccionar todos los elementos con role="row"
+        const messageElements = main.querySelectorAll('div[role="row"]');
+        if (messageElements.length === 0) return null; // Si no hay elementos, retornar null
 
-        // primer intento con variante de chat grupal
-        let messageWrapper = messageItem.querySelector('div._amjv._aotl > .message-in.focusable-list-item._amjy._amjw > ._amk4, ._amkd, ._amk5 > ._amk6._amlo > div.x9f619.x1hx0egp.x1yrsyyn.x1sxyh0.xwib8y2.xohu8s8 > ._ahxj._ahxz.x78zum5');
-        let messageInfoContainer = messageItem.querySelector('._amjv._aotl > .message-in.focusable-list-item._amjy._amjw > ._amk4, ._amkd, ._amk5 > ._amk6._amlo > div.x9f619.x1hx0egp.x1yrsyyn.x1sxyh0.xwib8y2.xohu8s8');
+        // Tomar el último elemento
+        const lastMessageElement = messageElements[messageElements.length - 1];
 
-        if (!messageWrapper) { // messageWrapper grupal no encontrado
-            console.log('messageWrapper de chat grupal no encontrado.');
+        // Extraer el número de teléfono
+        const phoneNumber = lastMessageElement.querySelector('span._ahx_[role="button"]')?.textContent.trim() || lastMessageElement.querySelector('div.copyable-text')?.getAttribute('data-pre-plain-text')?.match(/(?<=\] ).+?(?=:)/)?.[0] || null;
 
-            // segundo intento con variante de chat privado
-            messageWrapper = messageItem.querySelector('div._amjv._aotl span._ao3e.selectable-text.copyable-text'); // messageWrapper = messageItem.querySelector('div._amjv._aotl > .message-in.focusable-list-item._amjy._amjz._amjw > ._amk4._amkd > ._amk6._amlo > div.x9f619.x1hx0egp.x1yrsyyn.x1ct7el4.x1dm7udd.xwib8y2 > ._ahxj._ahxz.x78zum5');
-            messageInfoContainer = messageItem.querySelector('div._amjv._aotl div._amk6._amlo');
-            if (!messageWrapper) { // messageWrapper individual no encontrado
-                console.log('messageWrapper de chat individual no encontrado.');
-                return null;
-            }
-            console.log('messageWrapper de chat individual encontrado.');
-        }
-        console.log('messageWrapper de chat grupal encontrado.');
+        // Extraer el mensaje
+        const message = lastMessageElement.querySelector('.selectable-text')?.textContent.trim() || null;
 
-        let nameElement = messageWrapper.querySelector('span._ahxy'); // solución para números no registrados dentro de grupos
-        let numberElement = messageWrapper.querySelector('span._ahx_');
+        // Extraer la hora
+        const hour = lastMessageElement.querySelector('.x1rg5ohu')?.textContent.trim() || null;;
 
-        if (!nameElement || !numberElement) { // solución para números registrados dentro de grupos
-            nameElement = messageWrapper.querySelector('span._ahxt.x1ypdohk.xt0b8zv._ao3e'); // _ahxt x1ypdohk xt0b8zv _ao3e
-            numberElement = messageWrapper.querySelector('span._ahxt.x1ypdohk.xt0b8zv._ao3e'); // mismo para nombre y teléfono
+        // Extraer la citación
+        const quotedPhoneNumber = lastMessageElement.querySelector('span._ahx_[role="button"]')?.textContent.trim() || null;;
 
-            if (!nameElement || !numberElement) { // solución para chat privado
-                nameElement = messageInfoContainer.querySelector('span[aria-label]'); // chat personal, no grupo
-                numberElement = messageInfoContainer.querySelector('span[aria-label]'); // mismo
+        // Extraer la citación
+        const quotedMessage = lastMessageElement.querySelector('.quoted-mention')?.textContent.trim() || null;;
 
-                if (!nameElement || !numberElement) {
-                    console.log('No se encontró nameElement o numberElement.');
-                    return null;
-                }
-            }
-        }
-        console.log('Se encontró nameElement o numberElement.');
+        // Buscar el primer botón
+        const optionsButton = lastMessageElement.querySelector('div._ahkm[data-js-context-icon="true"][role="button"]') || null;;
 
-        const name = nameElement.innerText.trim();
-        const number = numberElement.innerText.trim();
+        // Obtener el componente mayor (_amk4 _amkd _amk5)
+        const container = lastMessageElement.querySelector('._amk4._amkd._amk5') || null;
 
-        // Ahora buscamos el mensaje
-        let messageTextContainer = messageInfoContainer.querySelector('._ahy1.copyable-text');
-        if (!messageTextContainer) {
-            messageTextContainer = messageInfoContainer.querySelector('div div.x9f619.x1hx0egp.x1yrsyyn.x1ct7el4.x1dm7udd.xwib8y2 span._ao3e.selectable-text.copyable-text');
-            if (!messageTextContainer) { // variante chat privado
-                console.log('messageTextContainer no encontrado.');
-                return null;
-            }
-        }
-        console.log('messageTextContainer encontrado.');
-
-        // Seleccionamos el div con la clase _akbu que debería contener el mensaje
-        const messageTextWrapper = messageTextContainer.querySelector('._akbu');
-        if (messageTextWrapper) {
-            console.log('messageTextWrapper encontrado.');
-        }
-
-        const messageTextElement = messageTextWrapper.querySelector('._ao3e.selectable-text.copyable-text'); // Seleccionamos el span con el mensaje
-        if (messageTextElement) {
-            console.log('messageTextElement encontrado.');
-        }
-
-        let messageSpan = messageTextElement.querySelector('span');
-        if (!messageSpan) { // versión chat privado
-            messageSpan = messageTextContainer.querySelector('span');
-            if (!messageSpan) {
-                console.log('messageSpan no encontrado.');
-                return null;
-            }
-        }
-        console.log('messageSpan encontrado.');
-
-        const message = messageSpan.innerText.trim(); // texto copiado
-        if (!message) {
-            console.log('message no encontrado.');
-            return null;
-        }
-        console.log('message encontrado.');
-
-        // versión chat grupal | Hora
-        let timeWrapper = messageInfoContainer.querySelector('.x1n2onr6.x1n327nk.x18mqm2i.xhsvlbd.x11i5rnm.xz62fqu.xsgj6o6');
-        let time = 'unknown';
-        if (!timeWrapper) {
-            timeWrapper = messageTextWrapper.querySelector('span > span.x3nfvp2.xxymvpz.xlshs6z.xqtp20y.xexx8yu.x150jy0e.x18d9i69.x1e558r4.x12lo8hy.x152skdk');
-            if (!timeWrapper) { // versión chat privado
-                console.log('timeWrapper no encontrado');
-            }
-        }
-        console.log('timeWrapper encontrado');
-
-        let timeSubContainer = timeWrapper.querySelector('.x13yyeie.xx3o462.xuxw1ft.x78zum5.x6s0dn4.x12lo8hy.x152skdk');
-        if (!timeSubContainer) {
-            console.log('timeSubContainer no encontrado');
-        }
-
-        let timeElement = timeSubContainer.querySelector('.x1rg5ohu.x16dsc37');
-        if (!timeElement) {
-            timeElement = timeSubContainer.querySelector('span.x1c4vz4f.x2lah0s'); // versión chat privado
-            if (timeElement) {
-                time = timeElement.innerText.trim();
-            }
-        }
-
-        console.log(`Nombre: ${name}, Número: ${number}, Mensaje: ${message}, Hora: ${time}`); // Publicamos todos los datos en una sola salida
-        const items = [name, number, message, time]; // Crear un arreglo con los textos
-        return items;
-    } // completo
+        return {
+            phoneNumber: phoneNumber,
+            message: message,
+            hour: hour,
+            quotedPhoneNumber: quotedPhoneNumber,
+            quotedMessage: quotedMessage,
+            optionsButton: optionsButton,
+            container: container,
+        };
+    } // nuevo
 
     async function postResponseReceived(correctAnswer, name, message, question) {
         console.log(`iniciando postResponseReceived para respuesta: ${correctAnswer}`);
@@ -1758,7 +1756,7 @@
             }
         } else if (userNumber.startsWith("+54") && !userNumber.startsWith("+54_")) {
             userNumber = userNumber.substring(0, 16)
-        } else if (userNumber.startsWith("+51") || userNumber.startsWith("+58 412")) { 
+        } else if (userNumber.startsWith("+51") || userNumber.startsWith("+58 412")) {
             userNumber = userNumber.substring(0, 13)
         } else if (userNumber.startsWith("+55") || userNumber.startsWith("+593") || userNumber.startsWith("+58 424-") || userNumber.startsWith("+58 424-")) {
             userNumber = userNumber.substring(0, 14)
@@ -1879,6 +1877,124 @@
     }
 
 
+
+    function makeDraggable2(element) {
+        // Verificar que el elemento sea válido
+        if (!(element instanceof HTMLElement)) {
+            console.error("El argumento debe ser un elemento HTML.");
+            return;
+        }
+
+        // Variables para el arrastre
+        let isDragging = false;
+        let lastMouseX = 0; // Guarda la última posición X del mouse
+        let lastMouseY = 0; // Guarda la última posición Y del mouse
+
+        // Desconectar el elemento de su padre inmediato y adjuntarlo al body
+        document.body.appendChild(element);
+
+        // Establecer posición absoluta inicial
+        element.style.position = "absolute";
+        element.style.cursor = "grab";
+
+        // Evento mousedown: Iniciar el arrastre
+        element.addEventListener("mousedown", (e) => {
+            isDragging = true;
+
+            // Guardar la posición inicial del mouse
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+
+            element.style.cursor = "grabbing";
+        });
+
+        // Evento mousemove: Mover el elemento
+        document.addEventListener("mousemove", (e) => {
+            if (isDragging) {
+                // Calcular el cambio en la posición del mouse
+                const deltaX = e.clientX - lastMouseX;
+                const deltaY = e.clientY - lastMouseY;
+
+                // Actualizar la posición del elemento sumando el cambio
+                const currentLeft = parseFloat(element.style.left || 0);
+                const currentTop = parseFloat(element.style.top || 0);
+                //console.log(`posición inicial ${currentLeft}, ${currentTop}`);
+                element.style.left = `${currentLeft + deltaX}px`;
+                element.style.top = `${currentTop + deltaY}px`;
+
+                // Actualizar la última posición del mouse
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+            }
+        });
+
+        // Evento mouseup: Detener el arrastre
+        document.addEventListener("mouseup", () => {
+            if (isDragging) {
+                isDragging = false;
+                element.style.cursor = "grab";
+            }
+        });
+    }
+
+    function makeDraggable(movementStarterItem, draggableItem) {
+        // Verificar que el elemento sea válido
+        if (!(movementStarterItem instanceof HTMLElement) || !(draggableItem instanceof HTMLElement)) {
+            console.error("Alguno de los argumentos no es un elemento HTML.");
+            return;
+        }
+
+        // Variables para el arrastre
+        let isDragging = false;
+        let lastMouseX = 0; // Guarda la última posición X del mouse
+        let lastMouseY = 0; // Guarda la última posición Y del mouse
+
+        // Desconectar el elemento de su padre inmediato y adjuntarlo al body
+        document.body.appendChild(draggableItem);
+
+        // Establecer posición absoluta inicial
+        draggableItem.style.position = "absolute";
+        movementStarterItem.style.cursor = "grab";
+
+        // Evento mousedown: Iniciar el arrastre
+        movementStarterItem.addEventListener("mousedown", (e) => {
+            isDragging = true;
+
+            // Guardar la posición inicial del mouse
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+
+            movementStarterItem.style.cursor = "grabbing";
+        });
+
+        // Evento mousemove: Mover el elemento
+        document.addEventListener("mousemove", (e) => {
+            if (isDragging) {
+                // Calcular el cambio en la posición del mouse
+                const deltaX = e.clientX - lastMouseX;
+                const deltaY = e.clientY - lastMouseY;
+
+                // Actualizar la posición del elemento sumando el cambio
+                const currentLeft = parseFloat(draggableItem.style.left || 0);
+                const currentTop = parseFloat(draggableItem.style.top || 0);
+                //console.log(`posición inicial ${currentLeft}, ${currentTop}`);
+                draggableItem.style.left = `${currentLeft + deltaX}px`;
+                draggableItem.style.top = `${currentTop + deltaY}px`;
+
+                // Actualizar la última posición del mouse
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+            }
+        });
+
+        // Evento mouseup: Detener el arrastre
+        document.addEventListener("mouseup", () => {
+            if (isDragging) {
+                isDragging = false;
+                movementStarterItem.style.cursor = "grab";
+            }
+        });
+    }
 
     // Primer paso llamar a la función checkAndCreateButton cada 2 segundos
     setInterval(checkAndCreateButton, 2000);
